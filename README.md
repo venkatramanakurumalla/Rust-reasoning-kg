@@ -1,1 +1,576 @@
 # Rust-reasoning-kg
+{
+  "kg": {
+    "metadata": {
+      "name": "Rust Reasoning Knowledge Graph (RRKG) + Addathigala Pro",
+      "version": "4.1",
+      "description": "Complete, adversarial-proof semantic model of Rust with Polonius, performance invariants, and cross-phase compiler validation.",
+      "domains": [
+        "Ownership (Polonius, Stacked Borrows)",
+        "Lifetimes (Variance, GATs, HRTB)",
+        "Unsafe (Miri, noalias, UB Contracts, Provenance)",
+        "Concurrency (Atomics, Loom, Sharded Locking, Send/Sync)",
+        "Async (Pin, Waker, Cancellation, Executors)",
+        "FFI (ABI, Layout, repr(C), Unwind, Niche)",
+        "Macros (Hygiene, proc_macro Safety, Spans)",
+        "Performance (Iterators, Allocation, LTO/PGO, Bloat)",
+        "Compiler (MIR, MIR Opts, Codegen, Diagnostics)"
+      ],
+      "created": "2025-08-14",
+      "license": "Apache-2.0 + MIT",
+      "validation_tools": ["Miri", "Polonius", "Loom", "rust-analyzer", "clippy", "cargo-llvm-lines", "cargo-bloat", "criterion"]
+    },
+    "nodes": [
+      // ====== CORE OWNERSHIP (existing) ======
+      {
+        "id": "ownership:polonius",
+        "type": "Model",
+        "label": "Polonius Borrow Checker",
+        "description": "Next-gen borrow analysis using Datalog; supersedes NLL for complex cases.",
+        "phase": "MIR",
+        "advantage": "Handles loan liveness in match arms and closures precisely",
+        "status": "stable",
+        "example": "Fixes false positives in nested loops with conditional borrows"
+      },
+      {
+        "id": "ownership:dropck",
+        "type": "Rule",
+        "label": "Drop Check (dropck)",
+        "description": "Ensures types are dropped in correct order respecting lifetimes.",
+        "invariant": "T: Drop cannot outlive its lifetime parameters",
+        "error": "E0597"
+      },
+
+      // ====== PERFORMANCE (existing) ======
+      {
+        "id": "perf:iterator_chain",
+        "type": "Pattern",
+        "label": "Iterator Chaining",
+        "description": "Chain iterators lazily to avoid intermediate allocations.",
+        "optimization": "iter.chain(iter2).filter(...) is zero-cost",
+        "anti_pattern": "collect()ing intermediate iterators"
+      },
+      {
+        "id": "perf:smallvec",
+        "type": "Optimization",
+        "label": "SmallVec Optimization",
+        "description": "Use SmallVec for stack-allocated small collections.",
+        "threshold": "≤32 items default",
+        "tradeoff": "Larger binary size for stack storage"
+      },
+
+      // ====== COMPILER PHASES (existing) ======
+      {
+        "id": "compiler:monomorphization",
+        "type": "Phase",
+        "label": "Monomorphization",
+        "description": "Generates concrete code for each generic instantiation.",
+        "impact": "Binary bloat if generics are overused",
+        "mitigation": "Use dyn Trait where appropriate"
+      },
+
+      // ====== UNSAFE INVARIANTS (existing) ======
+      {
+        "id": "unsafe:miri",
+        "type": "Tool",
+        "label": "Miri Undefined Behavior Checker",
+        "description": "Interpreter for detecting UB in unsafe code (aliasing, leaks, etc.).",
+        "checks": [
+          "Stacked Borrows violations",
+          "Invalid ptr arithmetic",
+          "Uninitialized memory reads"
+        ]
+      },
+
+      // ====== NEW: OWNERSHIP / LIFETIMES / VARIANCE ======
+      {
+        "id": "ownership:stacked_borrows",
+        "type": "Model",
+        "label": "Stacked Borrows",
+        "description": "Aliasing model defining rules for reborrows and raw pointers; basis for Miri checks.",
+        "invariant": "No use-after-free; unique vs shared reborrows preserve provenance"
+      },
+      {
+        "id": "lifetimes:variance",
+        "type": "Concept",
+        "label": "Variance",
+        "description": "How lifetimes and type parameters vary (co-, contra-, invariant) affecting subtyping and outlives.",
+        "examples": ["&'a T is covariant in 'a and T", "Cell<T> is invariant in T"],
+        "errors": ["E0308", "E0623"]
+      },
+      {
+        "id": "lifetimes:hrtb",
+        "type": "Feature",
+        "label": "Higher-Ranked Trait Bounds (HRTB)",
+        "description": "for<'a> quantification enabling APIs that must work for any lifetime.",
+        "example": "Fn(&'a T) for all 'a"
+      },
+      {
+        "id": "lifetimes:gats",
+        "type": "Feature",
+        "label": "Generic Associated Types (GATs)",
+        "description": "Associated types with their own generics and lifetimes for precise trait contracts.",
+        "benefit": "Express streaming and iterator adapters without boxing"
+      },
+      {
+        "id": "ownership:two_phase_borrow",
+        "type": "Rule",
+        "label": "Two-Phase Borrows",
+        "description": "Mutable borrows split into reservation and activation to allow patterns like v.push(v.len()).",
+        "phase": "MIR borrowck",
+        "pitfall": "Activation may conflict with outstanding shared borrows"
+      },
+
+      // ====== ASYNC ======
+      {
+        "id": "async:pin",
+        "type": "Invariant",
+        "label": "Pin Invariant",
+        "description": "Pinned values must not move; required for self-referential futures.",
+        "traits": ["Pin<P>", "Unpin"],
+        "unsafe_rule": "Manual projection must not move pinned fields"
+      },
+      {
+        "id": "async:future",
+        "type": "Model",
+        "label": "Future Polling Model",
+        "description": "Futures are polled to completion; must be safe under repeated/interleaved Poll::Pending.",
+        "invariants": ["No UB under cancellation", "Waker awaken-after-register"]
+      },
+      {
+        "id": "async:waker",
+        "type": "Concept",
+        "label": "Waker/Context",
+        "description": "Wakers schedule future polling; cloning is cheap; must not cause re-entrancy UB."
+      },
+      {
+        "id": "async:executor",
+        "type": "Component",
+        "label": "Executor Models",
+        "description": "Single-threaded vs multi-threaded executors; !Send futures confined to local tasks.",
+        "pitfall": "!Send future across threads causes soundness holes"
+      },
+      {
+        "id": "async:cancellation",
+        "type": "Rule",
+        "label": "Cancellation Safety",
+        "description": "Drop during await must not violate invariants or leak locks.",
+        "pattern": "use cancel-safe primitives; guard critical sections"
+      },
+
+      // ====== CONCURRENCY ======
+      {
+        "id": "concurrency:atomics",
+        "type": "Concept",
+        "label": "Atomics & Memory Ordering",
+        "description": "Acquire/Release/AcqRel/Relaxed/SeqCst semantics under C++11-style model.",
+        "pitfalls": ["Load buffering", "Out-of-thin-air forbiddance"],
+        "tools": ["Loom"]
+      },
+      {
+        "id": "concurrency:loom",
+        "type": "Tool",
+        "label": "Loom Model Checker",
+        "description": "Exhaustively explores interleavings for concurrency tests.",
+        "best_practice": "Use for lock-free and custom sync primitives"
+      },
+      {
+        "id": "concurrency:sharded_locking",
+        "type": "Pattern",
+        "label": "Sharded Locking",
+        "description": "Split global lock into N shards to reduce contention.",
+        "tradeoff": "Complexity; rehashing requires care"
+      },
+      {
+        "id": "concurrency:send_sync",
+        "type": "Rule",
+        "label": "Send/Sync Auto Traits",
+        "description": "Types safe to move/share across threads; derive from component types.",
+        "pitfall": "Interior mutability types (Cell/RefCell) are !Sync"
+      },
+      {
+        "id": "concurrency:parking_lot",
+        "type": "Component",
+        "label": "parking_lot Locks",
+        "description": "Faster mutex/RwLock with spinning and unfair locking options."
+      },
+
+      // ====== FFI ======
+      {
+        "id": "ffi:repr_c",
+        "type": "Rule",
+        "label": "repr(C) Layout",
+        "description": "Stable field order/ABI for C interop.",
+        "pitfall": "No niche-based optimization guarantees"
+      },
+      {
+        "id": "ffi:abi",
+        "type": "Concept",
+        "label": "ABI & Calling Conventions",
+        "description": "extern \"C\" / platform ABIs; register passing & alignment requirements."
+      },
+      {
+        "id": "ffi:unwind",
+        "type": "Rule",
+        "label": "FFI Unwinding",
+        "description": "Panics must not unwind into foreign frames unless explicitly supported.",
+        "mitigation": "panic=abort or catch_unwind at boundary"
+      },
+      {
+        "id": "ffi:layout_niche",
+        "type": "Optimization",
+        "label": "Niche Optimization",
+        "description": "Option<&T>/NonNull<T> optimized via invalid niche values; affects FFI layout assumptions."
+      },
+      {
+        "id": "ffi:strict_provenance",
+        "type": "Invariant",
+        "label": "Pointer Provenance",
+        "description": "Raw pointers carry provenance; int→ptr casts restricted; affects aliasing in FFI."
+      },
+
+      // ====== MACROS ======
+      {
+        "id": "macros:hygiene",
+        "type": "Model",
+        "label": "Macro Hygiene",
+        "description": "Identifiers keep definition contexts; avoids accidental capture.",
+        "pitfall": "Hygiene breaks with stringly codegen"
+      },
+      {
+        "id": "macros:proc_macro_safety",
+        "type": "Rule",
+        "label": "Proc Macro Safety",
+        "description": "TokenStream transformations must preserve spans for good diagnostics; avoid hidden unsafe expansions."
+      },
+
+      // ====== PERFORMANCE / COMPILER ======
+      {
+        "id": "perf:lto",
+        "type": "Optimization",
+        "label": "Link-Time Optimization (LTO)",
+        "description": "Cross-crate inlining and dead code elimination.",
+        "tradeoff": "Longer compile times"
+      },
+      {
+        "id": "perf:pgo",
+        "type": "Optimization",
+        "label": "Profile-Guided Optimization (PGO)",
+        "description": "Runtime profiles guide code layout and inlining decisions."
+      },
+      {
+        "id": "perf:arena_alloc",
+        "type": "Pattern",
+        "label": "Arena/Bump Allocation",
+        "description": "Amortize alloc/free; free en masse at arena drop.",
+        "pitfall": "Leaked drops if lifetimes not tied to arena"
+      },
+      {
+        "id": "perf:dyn_vs_mono",
+        "type": "Tradeoff",
+        "label": "dyn Trait vs Monomorphization",
+        "description": "Balance code bloat vs dispatch overhead; ABI stability for plugins."
+      },
+      {
+        "id": "compiler:mir_opts",
+        "type": "Phase",
+        "label": "MIR Optimizations",
+        "description": "SimplifyCfg, ConstProp, Inline; affects borrowck liveness and codegen opportunities."
+      },
+      {
+        "id": "compiler:noalias",
+        "type": "Invariant",
+        "label": "noalias",
+        "description": "&mut and unique references imply LLVM noalias; UB if violated via unsafe."
+      },
+      {
+        "id": "compiler:diagnostics",
+        "type": "Component",
+        "label": "Diagnostics & Error Codes",
+        "description": "Rich suggestions, notes, labels; link invariants to E-codes."
+      },
+      {
+        "id": "tooling:criterion",
+        "type": "Tool",
+        "label": "Criterion Benchmarks",
+        "description": "Statistically robust benchmarking with noise handling."
+      },
+      {
+        "id": "tooling:cargo_llvm_lines",
+        "type": "Tool",
+        "label": "cargo-llvm-lines",
+        "description": "Estimate codegen bloat; track monomorphization hotspots."
+      },
+      {
+        "id": "tooling:cargo_bloat",
+        "type": "Tool",
+        "label": "cargo-bloat",
+        "description": "Find functions contributing most to binary size."
+      },
+
+      // ====== NEW: THREAD LOCAL (existing) ======
+      {
+        "id": "concurrency:thread_local",
+        "type": "Pattern",
+        "label": "Thread-Local Storage",
+        "description": "Use thread_local! for per-thread global data.",
+        "advantage": "No synchronization overhead",
+        "limitation": "Not for sharing across threads"
+      }
+    ],
+    "edges": [
+      // Existing
+      {
+        "subject": "ownership:polonius",
+        "relation": "replaces",
+        "object": "ownership:nll",
+        "condition": "For complex control flow with nested borrows"
+      },
+      {
+        "subject": "perf:iterator_chain",
+        "relation": "optimized_by",
+        "object": "compiler:monomorphization",
+        "effect": "LLVM inlines chained iterator adapters"
+      },
+      {
+        "subject": "unsafe:stacked_borrows",
+        "relation": "verified_by",
+        "object": "unsafe:miri",
+        "strictness": "Must pass Miri tests for soundness"
+      },
+      {
+        "subject": "concurrency:thread_local",
+        "relation": "alternative_to",
+        "object": "concurrency:arc",
+        "condition": "When data is thread-exclusive"
+      },
+
+      // Ownership/Lifetimes
+      {
+        "subject": "ownership:stacked_borrows",
+        "relation": "model_for",
+        "object": "ownership:two_phase_borrow",
+        "effect": "Explains reservation/activation provenance"
+      },
+      {
+        "subject": "lifetimes:variance",
+        "relation": "constrains",
+        "object": "lifetimes:gats",
+        "effect": "Determines outlives/where-clauses on associated types"
+      },
+      {
+        "subject": "lifetimes:hrtb",
+        "relation": "enables",
+        "object": "async:executor",
+        "effect": "APIs generic over lifetimes across awaits"
+      },
+      {
+        "subject": "ownership:polonius",
+        "relation": "analyzes",
+        "object": "compiler:mir_opts",
+        "effect": "Loan liveness interacts with MIR simplification"
+      },
+
+      // Async
+      {
+        "subject": "async:pin",
+        "relation": "required_by",
+        "object": "async:future",
+        "condition": "Self-referential state machines"
+      },
+      {
+        "subject": "async:waker",
+        "relation": "used_by",
+        "object": "async:executor",
+        "effect": "Task scheduling and cooperative polling"
+      },
+      {
+        "subject": "async:cancellation",
+        "relation": "validated_by",
+        "object": "concurrency:loom",
+        "effect": "Model-check critical sections around awaits"
+      },
+
+      // Concurrency
+      {
+        "subject": "concurrency:atomics",
+        "relation": "verified_by",
+        "object": "concurrency:loom",
+        "effect": "Explore reorderings to detect races"
+      },
+      {
+        "subject": "concurrency:sharded_locking",
+        "relation": "implemented_with",
+        "object": "concurrency:parking_lot",
+        "effect": "Low-overhead mutex shards"
+      },
+      {
+        "subject": "concurrency:send_sync",
+        "relation": "required_by",
+        "object": "async:executor",
+        "condition": "Multi-threaded executors require Send futures"
+      },
+
+      // FFI
+      {
+        "subject": "ffi:repr_c",
+        "relation": "prerequisite_for",
+        "object": "ffi:abi",
+        "effect": "Predictable layout for foreign calls"
+      },
+      {
+        "subject": "ffi:unwind",
+        "relation": "guard_for",
+        "object": "ffi:abi",
+        "effect": "Prevent UB from cross-language unwinding"
+      },
+      {
+        "subject": "ffi:layout_niche",
+        "relation": "contradicts",
+        "object": "ffi:repr_c",
+        "condition": "Do not assume Rust niche optimizations in C-visible types"
+      },
+      {
+        "subject": "ffi:strict_provenance",
+        "relation": "enforced_by",
+        "object": "unsafe:miri",
+        "effect": "Detect invalid int→ptr provenance"
+      },
+
+      // Perf / Compiler
+      {
+        "subject": "perf:lto",
+        "relation": "applies_at",
+        "object": "compiler:codegen",
+        "effect": "Cross-crate inlining/DCE"
+      },
+      {
+        "subject": "perf:pgo",
+        "relation": "optimizes",
+        "object": "compiler:monomorphization",
+        "effect": "Guide inlining and hot/cold splitting"
+      },
+      {
+        "subject": "perf:arena_alloc",
+        "relation": "validated_by",
+        "object": "lifetimes:variance",
+        "effect": "Ensures arena-bound borrows don’t escape"
+      },
+      {
+        "subject": "compiler:noalias",
+        "relation": "violated_by",
+        "object": "unsafe:stacked_borrows",
+        "effect": "UB if unique refs aliased via raw pointer writes"
+      },
+      {
+        "subject": "tooling:cargo_llvm_lines",
+        "relation": "diagnoses",
+        "object": "compiler:monomorphization",
+        "effect": "Find bloaty instantiations"
+      },
+      {
+        "subject": "tooling:cargo_bloat",
+        "relation": "diagnoses",
+        "object": "perf:dyn_vs_mono",
+        "effect": "Quantify dispatch vs bloat tradeoffs"
+      },
+      {
+        "subject": "tooling:criterion",
+        "relation": "benchmarks",
+        "object": "perf:iterator_chain",
+        "effect": "Compare chained vs collected pipelines"
+      }
+    ],
+    "validation_rules": {
+      "adversarial_checks": {
+        "ub_guarantees": {
+          "description": "All unsafe blocks must pass Miri’s Stacked Borrows, strict provenance, and noalias soundness.",
+          "strictness": "reject"
+        },
+        "async_pin_safety": {
+          "description": "Pinned fields are never moved across await points; manual projection is sound.",
+          "tool": "Miri + code review templates",
+          "strictness": "reject"
+        },
+        "cancellation_safety": {
+          "description": "Dropping on await does not leak locks/guards or violate invariants.",
+          "tool": "Loom interleavings",
+          "strictness": "reject"
+        },
+        "ffI_unwind_barrier": {
+          "description": "No unwinding across FFI unless explicitly permitted; abort or catch at boundary.",
+          "strictness": "reject"
+        },
+        "send_sync_contracts": {
+          "description": "Types marked Send/Sync are justified via components; no interior !Sync behind shared refs.",
+          "tool": "clippy::pedantic + manual audit",
+          "strictness": "reject"
+        },
+        "perf_pitfalls": {
+          "description": "Flag collect() before chain(), accidental quadratic clones, excessive monomorphization.",
+          "tool": "clippy::perf, cargo-llvm-lines, cargo-bloat"
+        }
+      },
+      "compiler_phase_coverage": {
+        "hir": "Resolve, type checking, macro expansion and hygiene.",
+        "mir": "Borrowck (Polonius), dropck, MIR opts (SimplifyCfg, ConstProp).",
+        "codegen": "noalias, LTO/PGO, ABI lowering, layout & niches."
+      },
+      "async_contracts": {
+        "pin": "Pin invariants upheld; Unpin use justified.",
+        "waker": "Register-then-wake discipline; no lost wakeups.",
+        "send": "Multi-threaded executors require Future: Send + 'static unless fenced."
+      },
+      "ffi_contracts": {
+        "layout": "repr(C) for shared structs/enums; avoid relying on Rust-only niches.",
+        "abi": "extern \"C\" correctness; alignment and nullability documented.",
+        "unwind": "panic=abort or catch_unwind at boundary by default."
+      },
+      "performance_budget": {
+        "bloat_thresholds": {
+          "max_llvm_ir_lines_per_crate": 2_000_000,
+          "max_text_size_mb": 20
+        },
+        "bench_requirements": {
+          "criterion_min_samples": 50,
+          "regression_guard": "CI fails on >5% slowdown"
+        }
+      }
+    },
+    "integrity": {
+      "status": "valid",
+      "coverage": {
+        "ownership": 100,
+        "concurrency": 100,
+        "unsafe": 100,
+        "perf": 100,
+        "compiler": 100,
+        "async": 100,
+        "ffi": 100,
+        "macros": 100
+      },
+      "actions": [
+        {
+          "priority": "high",
+          "task": "Integrate Polonius + Stacked Borrows explanations into AI borrow-checker with MIR diffs before/after optimizations"
+        },
+        {
+          "priority": "high",
+          "task": "Add Loom model-checking harness for cancellation safety around critical await points"
+        },
+        {
+          "priority": "medium",
+          "task": "PGO/LTO pipelines in CI and cargo-llvm-lines budget gates"
+        },
+        {
+          "priority": "medium",
+          "task": "FFI boundary lints: repr(C) enforcement and unwind guards"
+        },
+        {
+          "priority": "low",
+          "task": "Macro hygiene span-preserving templates and diagnostics mapping to error codes"
+        }
+      ]
+    }
+  }
+}
