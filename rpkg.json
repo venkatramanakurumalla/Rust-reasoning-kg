@@ -1,0 +1,2272 @@
+{
+  "metadata": {
+    "name": "Rust Programming Knowledge Graph (RPKG)",
+    "version": "3.0",
+    "updated": "2025-08-16",
+    "description": "Comprehensive, production-grade Rust knowledge graph with deep technical insights, compiler internals, and performance optimization patterns.",
+    "license": "CC BY 4.0",
+    "schema": {
+      "node": {
+        "id": "string",
+        "label": "string",
+        "category": ["Domain"|"Concept"|"Type"|"Trait"|"API"|"Tool"|"Pattern"|"AntiPattern"|"Lint"|"Crate"|"Platform"|"Std"|"Book"|"RFC"|"MemoryModel"|"Optimization"|"Compiler"|"Unstable"],
+        "summary": "string",
+        "details": "string",
+        "examples": ["code string"],
+        "benchmarks": ["string"],
+        "tags": ["string"],
+        "reference": ["url"],
+        "since": "rust-version"
+      },
+      "edge": {
+        "from": "node.id",
+        "to": "node.id",
+        "relation": "uses|extends|implies|contradicts|composes|requires|provides|refines|alias_of|part_of|pitfall_of|tests|lints|documents|stabilizes|optimizes|replaces|deprecates",
+        "weight": "number",
+        "evidence": "string"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "lang.core",
+      "label": "Rust Core Language",
+      "category": ["Domain"],
+      "summary": "Ownership, borrowing, lifetimes, pattern matching, traits, generics, error handling.",
+      "details": "Safety without GC via static checks and explicit opt-in to unsafe. Zero-cost abstractions with monomorphization.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["safe-by-default", "zero-cost", "compiler-checks"],
+      "reference": ["https://doc.rust-lang.org/stable/reference/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "own.borrow",
+      "label": "Ownership & Borrowing",
+      "category": ["Concept"],
+      "summary": "Single owner, multiple shared borrows or one mutable borrow.",
+      "details": "Move semantics, Copy types, reborrows, NLL (non-lexical lifetimes). Compiler-enforced at compile-time with precise control.",
+      "examples": [
+        "let mut s = String::from(\"hi\");\nlet r = &s;\nlet r2 = &s;\nprintln!(\"{} {}\", r, r2);\nlet m = &mut s;\nm.push('!');",
+        "fn process(data: Vec<u8>) { /* consumes data */ }\nlet v = vec![1,2,3];\nprocess(v);\n// process(v); // Error: use after move"
+      ],
+      "benchmarks": [
+        "Ownership transfer vs clone: 0ns overhead for moves vs 50-200ns for medium Vec clone"
+      ],
+      "tags": ["borrow-checker", "moves", "NLL", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "life.times",
+      "label": "Lifetimes",
+      "category": ["Concept"],
+      "summary": "Static regions tying references to valid scopes.",
+      "details": "Elision rules, higher-ranked trait bounds (HRTB), 'static, variance. Compiler uses these to prove reference safety.",
+      "examples": [
+        "fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {\n    if x.len() > y.len() { x } else { y }\n}",
+        "struct Iter<'a, T> {\n    data: &'a [T],\n    index: usize\n}\nimpl<'a, T> Iterator for Iter<'a, T> {\n    type Item = &'a T;\n    fn next(&mut self) -> Option<Self::Item> {\n        if self.index < self.data.len() {\n            let item = &self.data[self.index];\n            self.index += 1;\n            Some(item)\n        } else {\n            None\n        }\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["HRTB", "variance", "elision", "compiler"],
+      "reference": ["https://doc.rust-lang.org/nomicon/lifetimes.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "type.system",
+      "label": "Types & Generics",
+      "category": ["Domain"],
+      "summary": "Parametric polymorphism with monomorphization.",
+      "details": "Trait bounds, associated types, GATs, specialization (unstable). Compiler generates optimized code for each concrete type.",
+      "examples": [
+        "trait Processor<T> {\n    type Output;\n    fn process(&self, input: T) -> Self::Output;\n}\n\nimpl Processor<i32> for MyProcessor {\n    type Output = f64;\n    fn process(&self, input: i32) -> f64 {\n        input as f64 * 1.5\n    }\n}"
+      ],
+      "benchmarks": [
+        "Monomorphized generic functions have identical performance to concrete implementations"
+      ],
+      "tags": ["GATs", "associated-types", "compiler", "zero-cost"],
+      "reference": ["https://doc.rust-lang.org/book/ch10-00-generics.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "trait.system",
+      "label": "Traits",
+      "category": ["Concept"],
+      "summary": "Ad-hoc polymorphism; coherence via orphan rules.",
+      "details": "Auto traits (Send/Sync), negative bounds (unstable), blanket impls. Compiler checks trait implementations for coherence.",
+      "examples": [
+        "trait AsyncRead: Send + Sync {\n    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>;\n}\n\nimpl<T: tokio::io::AsyncRead + Send + Sync> AsyncRead for T {\n    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {\n        tokio::io::AsyncReadExt::read(self, buf).await\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["coherence", "orphan-rule", "auto-traits", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch10-02-traits.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pat.match",
+      "label": "Pattern Matching & Enums",
+      "category": ["Concept"],
+      "summary": "Algebraic data types with exhaustive matching.",
+      "details": "match guards, if let/while let, ref/ref mut bindings. Compiler ensures all cases are handled.",
+      "examples": [
+        "enum NetworkEvent {\n    Connect { user_id: u64, addr: SocketAddr },\n    Message { user_id: u64, msg: String },\n    Disconnect { user_id: u64 },\n}\n\nfn handle_event(event: NetworkEvent) {\n    match event {\n        NetworkEvent::Connect { user_id, addr } => \n            println!(\"User {} connected from {}\", user_id, addr),\n        NetworkEvent::Message { user_id, msg } => \n            println!(\"Message from {}: {}\", user_id, msg),\n        NetworkEvent::Disconnect { user_id } => \n            println!(\"User {} disconnected\", user_id),\n    }\n}"
+      ],
+      "benchmarks": [
+        "Enum matching compiles to efficient jump tables or if-else chains"
+      ],
+      "tags": ["ADT", "exhaustiveness", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch06-00-enums.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "errors.result",
+      "label": "Error Handling",
+      "category": ["Domain"],
+      "summary": "Result for recoverable, panic for unrecoverable.",
+      "details": "thiserror/anyhow for ergonomics, backtrace via std::backtrace. Compiler ensures errors are handled.",
+      "examples": [
+        "use thiserror::Error;\n\n#[derive(Error, Debug)]\npub enum ApiError {\n    #[error(\"network error: {0}\")]\n    Network(#[from] std::io::Error),\n    #[error(\"invalid header value: {0}\")]\n    InvalidHeader(String),\n}\n\nfn fetch_data() -> Result<String, ApiError> {\n    let response = reqwest::blocking::get(\"https://api.example.com\")?;\n    let header = response.headers().get(\"X-Token\")\n        .ok_or(ApiError::InvalidHeader(\"missing X-Token\".into()))?;\n    Ok(response.text()?)\n}"
+      ],
+      "benchmarks": [
+        "Result has zero overhead compared to manual error checking"
+      ],
+      "tags": ["Result", "anyhow", "thiserror", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch09-00-error-handling.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "smart.ptrs",
+      "label": "Smart Pointers",
+      "category": ["Std"],
+      "summary": "Box, Rc/Arc, Cell/RefCell, Mutex/RwLock.",
+      "details": "Interior mutability vs thread-safe mutability; Pin for self-referential futures. Compiler enforces borrowing rules.",
+      "examples": [
+        "use std::sync::{Arc, Mutex};\nuse std::thread;\n\nlet counter = Arc::new(Mutex::new(0));\nlet mut handles = vec![];\n\nfor _ in 0..10 {\n    let counter = Arc::clone(&counter);\n    let handle = thread::spawn(move || {\n        let mut num = counter.lock().unwrap();\n        *num += 1;\n    });\n    handles.push(handle);\n}\n\nfor handle in handles {\n    handle.join().unwrap();\n}\n\nprintln!(\"Result: {}\", *counter.lock().unwrap());"
+      ],
+      "benchmarks": [
+        "Arc clone: ~5ns, Mutex lock: ~20ns uncontended"
+      ],
+      "tags": ["interior-mutability", "sync", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch15-00-smart-pointers.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "concurrency.std",
+      "label": "Concurrency (std)",
+      "category": ["Domain"],
+      "summary": "Threads, channels, atomics.",
+      "details": "Send & Sync as safety gates; memory orderings. Compiler prevents data races.",
+      "examples": [
+        "use std::sync::atomic::{AtomicUsize, Ordering};\nuse std::thread;\n\nstatic COUNTER: AtomicUsize = AtomicUsize::new(0);\n\nlet mut handles = vec![];\n\nfor _ in 0..10 {\n    handles.push(thread::spawn(|| {\n        for _ in 0..1000 {\n            COUNTER.fetch_add(1, Ordering::Relaxed);\n        }\n    }));\n}\n\nfor handle in handles {\n    handle.join().unwrap();\n}\n\nprintln!(\"Counter: {}\", COUNTER.load(Ordering::SeqCst));"
+      ],
+      "benchmarks": [
+        "Atomic increment: ~5ns, channel send: ~50ns"
+      ],
+      "tags": ["threads", "channels", "atomics", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch16-00-concurrency.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "async.await",
+      "label": "Async/Await & Futures",
+      "category": ["Domain"],
+      "summary": "Zero-cost state machines; executors in crates.",
+      "details": "Pin, Waker, !Unpin; runtimes (tokio, async-std), sync primitives. Compiler generates state machines.",
+      "examples": [
+        "use tokio::net::TcpStream;\nuse tokio::io::{self, AsyncWriteExt};\n\nasync fn send_request(host: &str, port: u16, msg: &str) -> io::Result<()> {\n    let mut stream = TcpStream::connect((host, port)).await?;\n    stream.write_all(msg.as_bytes()).await?;\n    Ok(())\n}\n\n#[tokio::main]\nasync fn main() {\n    if let Err(e) = send_request(\"example.com\", 8080, \"GET / HTTP/1.1\\r\\n\\r\\n\").await {\n        eprintln!(\"Error: {}\", e);\n    }\n}"
+      ],
+      "benchmarks": [
+        "Async task spawn: ~50ns, context switch: ~100ns"
+      ],
+      "tags": ["futures", "pin", "tokio", "compiler"],
+      "reference": ["https://rust-lang.github.io/async-book/"],
+      "since": "1.39.0"
+    },
+    {
+      "id": "tokio.crate",
+      "label": "Tokio",
+      "category": ["Crate"],
+      "summary": "De-facto async runtime: I/O, time, sync.",
+      "details": "Multi-threaded scheduler, cooperative yielding, tracing integration. Production-grade performance.",
+      "examples": [
+        "use tokio::sync::mpsc;\nuse tokio::time::{sleep, Duration};\n\n#[tokio::main]\nasync fn main() {\n    let (tx, mut rx) = mpsc::channel(32);\n    \n    tokio::spawn(async move {\n        for i in 0..10 {\n            tx.send(i).await.unwrap();\n            sleep(Duration::from_millis(100)).await;\n        }\n    });\n    \n    while let Some(i) = rx.recv().await {\n        println!(\"Got: {}\", i);\n    }\n}"
+      ],
+      "benchmarks": [
+        "Tokio TCP echo server: 100k req/s on 4 core machine"
+      ],
+      "tags": ["runtime", "io", "net", "production"],
+      "reference": ["https://tokio.rs/"],
+      "since": "0.1.0"
+    },
+    {
+      "id": "serde.crate",
+      "label": "Serde",
+      "category": ["Crate"],
+      "summary": "Serialization framework with derive macros.",
+      "details": "serde_json, bincode, feature flags, zero-copy via borrow. Highly optimized.",
+      "examples": [
+        "use serde::{Serialize, Deserialize};\n\n#[derive(Serialize, Deserialize, Debug)]\nstruct User {\n    id: u64,\n    name: String,\n    #[serde(default)]\n    is_active: bool,\n}\n\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let user = User {\n        id: 42,\n        name: \"Alice\".into(),\n        is_active: true,\n    };\n    \n    // Serialize to JSON\n    let json = serde_json::to_string(&user)?;\n    println!(\"Serialized: {}\", json);\n    \n    // Deserialize from JSON\n    let deserialized: User = serde_json::from_str(&json)?;\n    println!(\"Deserialized: {:?}\", deserialized);\n    \n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "serde_json: ~500MB/s parse, ~300MB/s serialize on modern CPU"
+      ],
+      "tags": ["serde", "derive", "performance"],
+      "reference": ["https://serde.rs/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "proc.macros",
+      "label": "Procedural Macros",
+      "category": ["Domain"],
+      "summary": "Custom derives, attribute and function-like macros.",
+      "details": "TokenStream manipulation, hygiene, span. Compiler plugin architecture.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse quote::quote;\nuse syn::{parse_macro_input, DeriveInput};\n\n#[proc_macro_derive(HelloMacro)]\npub fn hello_macro_derive(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    \n    let expanded = quote! {\n        impl HelloMacro for #name {\n            fn hello_macro() {\n                println!(\"Hello, Macro! My name is {}!\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(expanded)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["macro", "hygiene", "compiler"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "ffi.c",
+      "label": "FFI with C",
+      "category": ["Domain"],
+      "summary": "extern \"C\", repr(C), unsafe boundaries.",
+      "details": "bindgen, cbindgen, ABI stability caveats. Compiler ensures proper calling conventions.",
+      "examples": [
+        "use std::os::raw::c_int;\n\n#[repr(C)]\npub struct Point {\n    x: c_int,\n    y: c_int,\n}\n\nextern \"C\" {\n    fn sqrt(x: f64) -> f64;\n}\n\n#[no_mangle]\npub extern \"C\" fn distance(p1: &Point, p2: &Point) -> f64 {\n    let dx = (p2.x - p1.x) as f64;\n    let dy = (p2.y - p1.y) as f64;\n    unsafe { sqrt(dx*dx + dy*dy) }\n}"
+      ],
+      "benchmarks": [
+        "FFI call overhead: ~5ns for simple functions"
+      ],
+      "tags": ["ABI", "bindgen", "compiler"],
+      "reference": ["https://doc.rust-lang.org/nomicon/ffi.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "unsafe.rust",
+      "label": "Unsafe Rust",
+      "category": ["Domain"],
+      "summary": "Escape hatches with safety invariants.",
+      "details": "aliasing rules, UB, unsafe traits/functions, unsafe blocks minimality. Compiler trusts programmer.",
+      "examples": [
+        "use std::ptr;\n\n/// SAFETY: The caller must ensure the pointer is valid and properly aligned.\nunsafe fn unsafe_operation(ptr: *mut u8, len: usize) {\n    for i in 0..len {\n        ptr.add(i).write(i as u8);\n    }\n}\n\nfn safe_wrapper(buffer: &mut [u8]) {\n    // Safe because we control the input\n    unsafe {\n        unsafe_operation(buffer.as_mut_ptr(), buffer.len());\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["UB", "invariants", "compiler"],
+      "reference": ["https://doc.rust-lang.org/nomicon/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "mem.model",
+      "label": "Memory Model",
+      "category": ["MemoryModel"],
+      "summary": "Stacked Borrows, LLVM aliasing, data-race freedom.",
+      "details": "Miri for UB detection; atomics ordering. Compiler optimizations depend on this.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["miri", "aliasing", "stacked-borrows", "compiler"],
+      "reference": ["https://rust-lang.github.io/unsafe-code-guidelines/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "build.cargo",
+      "label": "Cargo & Crates",
+      "category": ["Tool"],
+      "summary": "Package manager, workspaces, features, profiles.",
+      "details": "build scripts (build.rs), patch/override, registries. Compiler integration.",
+      "examples": [
+        "[package]\nname = \"my-crate\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nserde = { version = \"1.0\", features = [\"derive\"] }\ntokio = { version = \"1.0\", features = [\"full\"] }\n\n[dev-dependencies]\nrstest = \"0.15\"\n\n[features]\ndefault = [\"logging\"]\nlogging = [\"tracing\"]\n\n[profile.release]\nlto = true\ncodegen-units = 1"
+      ],
+      "benchmarks": [],
+      "tags": ["workspace", "features", "lto", "compiler"],
+      "reference": ["https://doc.rust-lang.org/cargo/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "mod.visibility",
+      "label": "Modules & Visibility",
+      "category": ["Concept"],
+      "summary": "crate, mod, use, pub(in), re-exports.",
+      "details": "Path hygiene, prelude, glob vs explicit. Compiler enforces visibility rules.",
+      "examples": [
+        "mod network {\n    pub mod tcp {\n        pub fn connect(addr: &str) -> Result<(), String> {\n            /* ... */\n            Ok(())\n        }\n    }\n    \n    mod internal {\n        pub(crate) fn helper() { /* ... */ }\n    }\n}\n\nuse network::tcp;\n\nfn main() {\n    if let Err(e) = tcp::connect(\"localhost:8080\") {\n        eprintln!(\"Connection failed: {}\", e);\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["module-system", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "testing.std",
+      "label": "Testing & Property Tests",
+      "category": ["Domain"],
+      "summary": "Unit/integration tests, quickcheck/proptest.",
+      "details": "Test fixtures, #[should_panic], benchmarks via criterion. Compiler test harness.",
+      "examples": [
+        "#[cfg(test)]\nmod tests {\n    use super::*;\n    use proptest::prelude::*;\n    \n    #[test]\n    fn test_add() {\n        assert_eq!(add(2, 2), 4);\n    }\n    \n    #[test]\n    #[should_panic(expected = \"divide by zero\")]\n    fn test_divide_by_zero() {\n        divide(10, 0);\n    }\n    \n    proptest! {\n        #[test]\n        fn test_add_property(a in 0..100i32, b in 0..100i32) {\n            assert_eq!(add(a, b), a + b);\n        }\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["tests", "fuzz", "criterion", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch11-00-testing.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "tooling.clippy",
+      "label": "Clippy",
+      "category": ["Lint"],
+      "summary": "Lints for idioms and pitfalls.",
+      "details": "deny/warn groups, pedantic set. Compiler plugin.",
+      "examples": [
+        "// .cargo/config.toml\n[build]\nrustflags = [\"-D\", \"clippy::all\", \"-D\", \"clippy::pedantic\"]\n\n// src/lib.rs\n#![allow(clippy::module_name_repetitions)]\n\n// Example of fixing a clippy warning:\n// Before: let x = 5;\n// After:  let _x = 5; // or use the variable"
+      ],
+      "benchmarks": [],
+      "tags": ["lint", "compiler"],
+      "reference": ["https://github.com/rust-lang/rust-clippy"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "fmt.rustfmt",
+      "label": "rustfmt",
+      "category": ["Tool"],
+      "summary": "Consistent formatting.",
+      "details": "edition, config via rustfmt.toml. Compiler integration.",
+      "examples": [
+        "// rustfmt.toml\nmax_width = 100\nuse_small_heuristics = \"Max\"\n\n// Before formatting\nfn main() { let x=5;println!(\"x: {}\",x); }\n\n// After formatting\nfn main() {\n    let x = 5;\n    println!(\"x: {}\", x);\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["format", "compiler"],
+      "reference": ["https://github.com/rust-lang/rustfmt"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "logging.tracing",
+      "label": "tracing",
+      "category": ["Crate"],
+      "summary": "Structured, async-aware diagnostics.",
+      "details": "spans, subscribers, instrumentation macros. Production-grade.",
+      "examples": [
+        "use tracing::{info, instrument};\nuse tracing_subscriber::{fmt, EnvFilter};\n\n#[instrument]\nasync fn process_request(user_id: u64, data: &str) -> Result<(), String> {\n    info!(%user_id, data_len = data.len(), \"Processing request\");\n    // ...\n    Ok(())\n}\n\nfn main() {\n    // Initialize logging\n    fmt().with_env_filter(EnvFilter::from_default_env()).init();\n    \n    // This will automatically log with context\n    if let Err(e) = tokio::runtime::Runtime::new()\n        .unwrap()\n        .block_on(process_request(42, \"test data\")) \n    {\n        tracing::error!(error = %e, \"Request failed\");\n    }\n}"
+      ],
+      "benchmarks": [
+        "tracing: ~100ns per event with minimal subscriber"
+      ],
+      "tags": ["observability", "production"],
+      "reference": ["https://tracing.rs/"],
+      "since": "0.1.0"
+    },
+    {
+      "id": "panic.strategy",
+      "label": "Panic & Unwind",
+      "category": ["Concept"],
+      "summary": "Abort vs unwind; catch_unwind for FFI boundaries.",
+      "details": "no_std defaults to abort; poison on sync primitives. Compiler generates unwind tables.",
+      "examples": [
+        "use std::panic;\n\nfn main() {\n    // Set panic hook\n    panic::set_hook(Box::new(|info| {\n        eprintln!(\"Custom panic handler: {}\", info);\n    }));\n    \n    // Catch unwind\n    let result = panic::catch_unwind(|| {\n        panic!(\"This is a test panic\");\n    });\n    \n    match result {\n        Ok(_) => println!(\"No panic occurred\"),\n        Err(_) => println!(\"Caught a panic\"),\n    }\n}"
+      ],
+      "benchmarks": [
+        "catch_unwind overhead: ~50ns when no panic occurs"
+      ],
+      "tags": ["panic", "abort", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/panic/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "no_std.embedded",
+      "label": "no_std & Embedded",
+      "category": ["Platform"],
+      "summary": "Targets without OS/alloc.",
+      "details": "alloc crate, cortex-m, RTIC, HALs. Compiler supports custom targets.",
+      "examples": [
+        "// lib.rs\n#![no_std]\n#![no_main]\n\nuse cortex_m_rt::entry;\nuse panic_halt as _;\n\n#[entry]\nfn main() -> ! {\n    let mut x = 0;\n    loop {\n        x += 1;\n        if x > 100 { x = 0; }\n    }\n}"
+      ],
+      "benchmarks": [
+        "no_std binary size: ~4KB minimal"
+      ],
+      "tags": ["embedded", "alloc", "compiler"],
+      "reference": ["https://docs.rust-embedded.org/book/intro/no-std.html"],
+      "since": "1.6.0"
+    },
+    {
+      "id": "wasm.target",
+      "label": "WebAssembly",
+      "category": ["Platform"],
+      "summary": "wasm32-* targets, wasm-bindgen, web-sys.",
+      "details": "JS interop, async via Promise, bundlers. Compiler WASM backend.",
+      "examples": [
+        "use wasm_bindgen::prelude::*;\n\n#[wasm_bindgen]\npub struct Calculator {\n    value: i32,\n}\n\n#[wasm_bindgen]\nimpl Calculator {\n    #[wasm_bindgen(constructor)]\n    pub fn new() -> Self {\n        Self { value: 0 }\n    }\n    \n    pub fn add(&mut self, x: i32) -> i32 {\n        self.value += x;\n        self.value\n    }\n    \n    #[wasm_bindgen(js_name = \"getValue\")]\n    pub fn get_value(&self) -> i32 {\n        self.value\n    }\n}"
+      ],
+      "benchmarks": [
+        "WASM function call from JS: ~50ns overhead"
+      ],
+      "tags": ["wasm", "wasm-bindgen", "compiler"],
+      "reference": ["https://rustwasm.github.io/docs/book/"],
+      "since": "1.30.0"
+    },
+    {
+      "id": "perf.profiling",
+      "label": "Performance & Profiling",
+      "category": ["Domain"],
+      "summary": "Inlining, LTO, PGO, flamegraphs.",
+      "details": "cache-friendly layouts, arena allocators, smallvec. Compiler optimizations.",
+      "examples": [
+        "// Example of performance-critical code\n#[inline(always)]\nfn fast_path(a: [f64; 4], b: [f64; 4]) -> [f64; 4] {\n    [\n        a[0] * b[0] - a[1] * b[1],\n        a[0] * b[1] + a[1] * b[0],\n        a[2] * b[2] - a[3] * b[3],\n        a[2] * b[3] + a[3] * b[2],\n    ]\n}\n\n// Profile-guided optimization setup\n// 1. Build with profiling:\n//    RUSTFLAGS=\"-C profile-generate=/tmp/pgo-data\" cargo build --release\n// 2. Run training workload\n// 3. Merge profiles:\n//    llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data\n// 4. Build with PGO:\n//    RUSTFLAGS=\"-C profile-use=/tmp/pgo-data/merged.profdata\" cargo build --release"
+      ],
+      "benchmarks": [
+        "PGO can improve performance by 10-30% on critical paths"
+      ],
+      "tags": ["perf", "PGO", "LTO", "compiler"],
+      "reference": ["https://nnethercote.github.io/perf-book/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "iterators.std",
+      "label": "Iterators",
+      "category": ["Std"],
+      "summary": "Lazy adapters with zero-cost abstraction.",
+      "details": "IntoIterator, impl Trait, streaming iterators. Compiler optimizes chains.",
+      "examples": [
+        "fn process_data(data: &[u32]) -> impl Iterator<Item = u32> + '_ {\n    data.iter()\n        .filter(|&&x| x % 2 == 0)\n        .map(|&x| x * 2)\n        .take(10)\n}\n\nfn main() {\n    let data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];\n    let sum: u32 = process_data(&data).sum();\n    println!(\"Sum: {}\", sum);\n}"
+      ],
+      "benchmarks": [
+        "Iterator chains compile to equivalent loops with zero overhead"
+      ],
+      "tags": ["iter", "impl-trait", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/iter/trait.Iterator.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "string.str",
+      "label": "str/String",
+      "category": ["Std"],
+      "summary": "UTF-8 invariants, slicing by bytes, graphemes via crates.",
+      "details": "Cow<'a, str>, From/Into, TryFrom/TryInto. Compiler optimizes string operations.",
+      "examples": [
+        "use std::borrow::Cow;\n\nfn process_input(input: &str) -> Cow<'_, str> {\n    if input.contains(\"special\") {\n        Cow::Owned(input.replace(\"special\", \"processed\"))\n    } else {\n        Cow::Borrowed(input)\n    }\n}\n\nfn main() {\n    let static_str = \"hello world\";\n    let owned_string = String::from(\"special string\");\n    \n    let result1 = process_input(static_str);\n    let result2 = process_input(&owned_string);\n    \n    println!(\"Result1: {}\", result1);\n    println!(\"Result2: {}\", result2);\n}"
+      ],
+      "benchmarks": [
+        "String allocation: ~15ns per byte"
+      ],
+      "tags": ["utf8", "cow", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/string/struct.String.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "collections.std",
+      "label": "Collections",
+      "category": ["Std"],
+      "summary": "Vec, VecDeque, HashMap (hashbrown), BTreeMap.",
+      "details": "reserve strategies, Entry API, deterministic order via BTree. Compiler optimizes collection operations.",
+      "examples": [
+        "use std::collections::{HashMap, BTreeMap};\n\nfn main() {\n    // HashMap example\n    let mut scores = HashMap::new();\n    scores.entry(\"Blue\").or_insert(10);\n    *scores.entry(\"Blue\").or_insert(0) += 5;\n    \n    // BTreeMap maintains sorted order\n    let mut ordered = BTreeMap::new();\n    ordered.insert(3, \"c\");\n    ordered.insert(1, \"a\");\n    ordered.insert(2, \"b\");\n    \n    for (k, v) in &ordered {\n        println!(\"{}: {}\", k, v);\n    }\n}"
+      ],
+      "benchmarks": [
+        "HashMap lookup: ~10ns, BTreeMap lookup: ~30ns for small maps"
+      ],
+      "tags": ["hashbrown", "entry-api", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/collections/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "net.std",
+      "label": "Networking (std)",
+      "category": ["Std"],
+      "summary": "Tcp/Udp, blocking I/O, timeouts.",
+      "details": "To use async I/O, prefer runtimes. Compiler optimizes network operations.",
+      "examples": [
+        "use std::io::{Read, Write};\nuse std::net::TcpStream;\nuse std::time::Duration;\n\nfn main() -> std::io::Result<()> {\n    let mut stream = TcpStream::connect(\"example.com:80\")?;\n    stream.set_read_timeout(Some(Duration::from_secs(5)))?;\n    \n    stream.write_all(b\"GET / HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n\")?;\n    \n    let mut response = Vec::new();\n    stream.read_to_end(&mut response)?;\n    \n    println!(\"Response: {}\", String::from_utf8_lossy(&response));\n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "TCP roundtrip: ~100µs on localhost"
+      ],
+      "tags": ["io", "net", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/net/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "sync.pattern.cs",
+      "label": "Concurrency Patterns",
+      "category": ["Pattern"],
+      "summary": "Actor model, work-stealing, bounded channels, lock-free.",
+      "details": "Backpressure with bounded mpsc; select! in async. Compiler helps enforce thread safety.",
+      "examples": [
+        "use std::sync::mpsc;\nuse std::thread;\n\n// Actor pattern\nstruct Actor {\n    receiver: mpsc::Receiver<Message>,\n}\n\nenum Message {\n    DoWork(u32),\n    Shutdown,\n}\n\nimpl Actor {\n    fn run(&mut self) {\n        while let Ok(msg) = self.receiver.recv() {\n            match msg {\n                Message::DoWork(n) => println!(\"Processing {}\", n),\n                Message::Shutdown => break,\n            }\n        }\n    }\n}\n\nfn main() {\n    let (sender, receiver) = mpsc::channel();\n    let mut actor = Actor { receiver };\n    \n    let handle = thread::spawn(move || {\n        actor.run();\n    });\n    \n    sender.send(Message::DoWork(42)).unwrap();\n    sender.send(Message::Shutdown).unwrap();\n    \n    handle.join().unwrap();\n}"
+      ],
+      "benchmarks": [
+        "Actor message passing: ~500ns per message"
+      ],
+      "tags": ["actor", "bounded", "lock-free", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.ownership.split",
+      "label": "Split Borrow",
+      "category": ["Pattern"],
+      "summary": "Split a struct into independent borrows to avoid &mut conflicts.",
+      "details": "Use field-level borrows or interior mutability. Compiler verifies safety.",
+      "examples": [
+        "struct Data {\n    a: Vec<u32>,\n    b: Vec<u32>,\n}\n\nimpl Data {\n    fn process(&mut self) {\n        // Split borrow\n        let a = &mut self.a;\n        let b = &mut self.b;\n        \n        a.push(1);\n        b.push(2);\n    }\n    \n    // Alternative using split_at_mut\n    fn split_example(&mut self) {\n        let (left, right) = self.a.split_at_mut(self.a.len() / 2);\n        left[0] = 1;\n        right[0] = 2;\n    }\n}"
+      ],
+      "benchmarks": [
+        "Split borrow has zero runtime overhead"
+      ],
+      "tags": ["borrow-splitting", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.newtype",
+      "label": "Newtype",
+      "category": ["Pattern"],
+      "summary": "Wrap primitive for type-safety.",
+      "details": "Transparent repr for FFI or ABI. Compiler optimizes away the wrapper.",
+      "examples": [
+        "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\nstruct UserId(u64);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\nstruct GroupId(u64);\n\nfn add_user_to_group(user: UserId, group: GroupId) {\n    // Compile-time prevention of mixing IDs\n    println!(\"Adding user {:?} to group {:?}\", user, group);\n}\n\n// Zero-cost abstraction\n#[repr(transparent)]\nstruct Meters(f64);\n\n#[repr(transparent)]\nstruct Feet(f64);\n\nfn calculate_distance(m: Meters) -> Feet {\n    Feet(m.0 * 3.28084)\n}"
+      ],
+      "benchmarks": [
+        "Newtype has zero runtime overhead"
+      ],
+      "tags": ["type-safety", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.builder",
+      "label": "Builder Pattern",
+      "category": ["Pattern"],
+      "summary": "Fluent construction with ownership transitions.",
+      "details": "Typestate builders with generic states. Compiler verifies state transitions.",
+      "examples": [
+        "struct Request {\n    url: String,\n    method: String,\n    headers: Vec<(String, String)>,\n    body: Option<Vec<u8>>,\n}\n\nstruct RequestBuilder {\n    url: Option<String>,\n    method: Option<String>,\n    headers: Vec<(String, String)>,\n    body: Option<Vec<u8>>,\n}\n\nimpl RequestBuilder {\n    fn new() -> Self {\n        Self {\n            url: None,\n            method: None,\n            headers: Vec::new(),\n            body: None,\n        }\n    }\n    \n    fn url(mut self, url: impl Into<String>) -> Self {\n        self.url = Some(url.into());\n        self\n    }\n    \n    fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n    \n    fn header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {\n        self.headers.push((key.into(), value.into()));\n        self\n    }\n    \n    fn body(mut self, body: impl Into<Vec<u8>>) -> Self {\n        self.body = Some(body.into());\n        self\n    }\n    \n    fn build(self) -> Result<Request, String> {\n        let url = self.url.ok_or(\"URL is required\")?;\n        let method = self.method.unwrap_or_else(|| \"GET\".to_string());\n        \n        Ok(Request {\n            url,\n            method,\n            headers: self.headers,\n            body: self.body,\n        })\n    }\n}\n\n// Usage:\nlet request = RequestBuilder::new()\n    .url(\"https://example.com\")\n    .method(\"POST\")\n    .header(\"Content-Type\", \"application/json\")\n    .body(br#\"{\"key\":\"value\"}\"#)\n    .build()\n    .unwrap();"
+      ],
+      "benchmarks": [
+        "Builder pattern has minimal overhead (1-2ns per method call)"
+      ],
+      "tags": ["typestate", "builder", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "antipattern.unwrap",
+      "label": "Excessive unwrap()",
+      "category": ["AntiPattern"],
+      "summary": "Panics leak into production.",
+      "details": "Prefer ? operator; map_err; context with anyhow. Compiler warns about potential panics.",
+      "examples": [
+        "// BAD: Will panic if None\nlet value = some_option.unwrap();\n\n// BAD: Will panic if Err\nlet result = fallible_operation().unwrap();\n\n// Better: Handle the error case\nlet value = some_option.ok_or(\"Missing value\")?;\n\n// Best: Use context for better error messages\nlet result = fallible_operation()\n    .context(\"Failed to perform operation\")?;"
+      ],
+      "benchmarks": [],
+      "tags": ["error-handling", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "antipattern.shared_mut",
+      "label": "Shared Mutable Aliasing",
+      "category": ["AntiPattern"],
+      "summary": "UB or borrow-checker fights.",
+      "details": "Use RefCell/Mutex or redesign ownership graph. Compiler prevents this in safe code.",
+      "examples": [
+        "// BAD: Trying to have multiple mutable references\nlet mut data = vec![1, 2, 3];\nlet ref1 = &mut data;\nlet ref2 = &mut data; // Compile error\n\n// BAD: Unsafe code with potential UB\nunsafe {\n    let ptr = data.as_mut_ptr();\n    let ref1 = &mut *ptr;\n    let ref2 = &mut *ptr.add(1);\n    // Potential UB if not careful with aliasing\n}\n\n// Better: Use interior mutability\nuse std::cell::RefCell;\nlet data = RefCell::new(vec![1, 2, 3]);\n{\n    let mut ref1 = data.borrow_mut();\n    ref1.push(4);\n}\n{\n    let mut ref2 = data.borrow_mut();\n    ref2.push(5);\n}\n\n// Best: Redesign ownership if possible"
+      ],
+      "benchmarks": [],
+      "tags": ["aliasing", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "macro.rules",
+      "label": "macro_rules!",
+      "category": ["Domain"],
+      "summary": "Declarative macros with pattern matching.",
+      "details": "TT munchers, repetition, hygiene. Compiler expands macros early.",
+      "examples": [
+        "macro_rules! vec_of {\n    ($($x:expr),*) => {\n        {\n            let mut temp_vec = Vec::new();\n            $(temp_vec.push($x);)*\n            temp_vec\n        }\n    };\n    ($($x:expr,)*) => (vec_of![$($x),*]);\n}\n\nmacro_rules! calculate {\n    (add $x:expr, $y:expr) => ($x + $y);\n    (mul $x:expr, $y:expr) => ($x * $y);\n}\n\nfn main() {\n    let v = vec_of![1, 2, 3];\n    println!(\"Sum: {}\", calculate!(add 1, 2));\n}"
+      ],
+      "benchmarks": [
+        "Macro expansion has zero runtime overhead"
+      ],
+      "tags": ["macros", "compiler"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "const.eval",
+      "label": "Const Eval & Generics",
+      "category": ["Concept"],
+      "summary": "const fn, const generics (min const generics stabilized).",
+      "details": "Compile-time computation; ~const bounds (nightly). Compiler evaluates at compile-time.",
+      "examples": [
+        "const fn factorial(n: u32) -> u32 {\n    match n {\n        0 | 1 => 1,\n        _ => n * factorial(n - 1),\n    }\n}\n\nstruct ArrayWrapper<const N: usize> {\n    data: [f64; N],\n}\n\nimpl<const N: usize> ArrayWrapper<N> {\n    const fn new() -> Self {\n        Self { data: [0.0; N] }\n    }\n    \n    const fn len(&self) -> usize {\n        N\n    }\n}\n\nconst FACT_10: u32 = factorial(10);\nconst ARRAY: ArrayWrapper<10> = ArrayWrapper::new();\n\nfn main() {\n    println!(\"10! = {}\", FACT_10);\n    println!(\"Array length: {}\", ARRAY.len());\n}"
+      ],
+      "benchmarks": [
+        "Const evaluation happens at compile-time with zero runtime cost"
+      ],
+      "tags": ["const-generics", "compiler"],
+      "reference": ["https://doc.rust-lang.org/reference/const_eval.html"],
+      "since": "1.31.0"
+    },
+    {
+      "id": "simd.portable",
+      "label": "SIMD & Performance",
+      "category": ["Domain"],
+      "summary": "portable_simd (nightly crate) and std::arch intrinsics.",
+      "details": "Target features, alignment, safety. Compiler generates SIMD instructions.",
+      "examples": [
+        "#![feature(portable_simd)]\nuse std::simd::f32x4;\n\nfn simd_add(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {\n    let a_simd = f32x4::from_array(a);\n    let b_simd = f32x4::from_array(b);\n    (a_simd + b_simd).to_array()\n}\n\n// Using architecture-specific intrinsics\n#[cfg(target_arch = \"x86_64\")]\nuse std::arch::x86_64::*;\n\n#[cfg(target_arch = \"x86_64\")]\nunsafe fn x86_simd_add(a: __m128, b: __m128) -> __m128 {\n    _mm_add_ps(a, b)\n}"
+      ],
+      "benchmarks": [
+        "SIMD operations can be 4-8x faster than scalar code"
+      ],
+      "tags": ["simd", "intrinsics", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/simd/index.html"],
+      "since": "nightly"
+    },
+    {
+      "id": "security.crypto",
+      "label": "Security & Crypto",
+      "category": ["Domain"],
+      "summary": "Use vetted crates; constant-time operations; zeroize.",
+      "details": "Avoid homegrown crypto; review MSRV and audits. Compiler helps prevent some vulnerabilities.",
+      "examples": [
+        "use rand_core::{OsRng, RngCore};\nuse sha2::{Sha256, Digest};\nuse zeroize::Zeroize;\n\n// Secure random number generation\nlet mut key = [0u8; 32];\nOsRng.fill_bytes(&mut key);\n\n// Hashing\nlet mut hasher = Sha256::new();\nhasher.update(b\"secure data\");\nlet result = hasher.finalize();\n\n// Securely zero memory\nkey.zeroize();"
+      ],
+      "benchmarks": [],
+      "tags": ["crypto", "zeroize", "security"],
+      "reference": ["https://crates.io/categories/cryptography"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "io.async.streams",
+      "label": "Async Streams",
+      "category": ["Concept"],
+      "summary": "Stream trait (futures-rs) for asynchronous sequences.",
+      "details": "select! fusion, backpressure via bounded channels. Compiler generates efficient state machines.",
+      "examples": [
+        "use futures::stream::{self, StreamExt};\nuse tokio::time::{sleep, Duration};\n\n#[tokio::main]\nasync fn main() {\n    // Create a stream of numbers\n    let mut stream = stream::iter(1..=5)\n        .then(|n| async move {\n            sleep(Duration::from_millis(100 * n)).await;\n            n\n        });\n    \n    // Process the stream\n    while let Some(n) = stream.next().await {\n        println!(\"Got: {}\", n);\n    }\n    \n    // Combine streams\n    let stream1 = stream::iter(1..3);\n    let stream2 = stream::iter(4..6);\n    let combined = stream1.chain(stream2);\n    \n    println!(\"Combined: {:?}\", combined.collect::<Vec<_>>().await);\n}"
+      ],
+      "benchmarks": [
+        "Stream processing has similar overhead to manual async/await"
+      ],
+      "tags": ["futures", "stream", "compiler"],
+      "reference": ["https://docs.rs/futures/latest/futures/stream/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pin.concept",
+      "label": "Pin & !Unpin",
+      "category": ["Concept"],
+      "summary": "Prevent moves after pinning for self-referential types.",
+      "details": "Projection via pin-project or manual unsafe. Compiler enforces pinning guarantees.",
+      "examples": [
+        "use std::pin::Pin;\nuse std::marker::PhantomPinned;\n\nstruct SelfReferential {\n    data: String,\n    pointer_to_data: *const String,\n    _pin: PhantomPinned,\n}\n\nimpl SelfReferential {\n    fn new(data: String) -> Pin<Box<Self>> {\n        let mut boxed = Box::pin(Self {\n            data,\n            pointer_to_data: std::ptr::null(),\n            _pin: PhantomPinned,\n        });\n        \n        let pointer_to_data = &boxed.data as *const String;\n        unsafe {\n            let mut_ref = Pin::as_mut(&mut boxed);\n            Pin::get_unchecked_mut(mut_ref).pointer_to_data = pointer_to_data;\n        }\n        \n        boxed\n    }\n    \n    fn get_data(self: Pin<&Self>) -> &str {\n        unsafe { &*(self.pointer_to_data) }\n    }\n}\n\nfn main() {\n    let pinned = SelfReferential::new(\"hello\".into());\n    println!(\"Data: {}\", pinned.as_ref().get_data());\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["pin", "self-referential", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/pin/index.html"],
+      "since": "1.33.0"
+    },
+    {
+      "id": "rfc.book",
+      "label": "The Rustonomicon",
+      "category": ["Book"],
+      "summary": "Unsafe Rust best practices and pitfalls.",
+      "details": "Invariants, aliasing, variance, ownership at the edges.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["unsafe-guide"],
+      "reference": ["https://doc.rust-lang.org/nomicon/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "docs.book",
+      "label": "The Rust Book",
+      "category": ["Book"],
+      "summary": "Official language guide; foundational learning.",
+      "details": "Covers most stable features and idioms.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["official-docs"],
+      "reference": ["https://doc.rust-lang.org/book/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "lint.miri",
+      "label": "Miri",
+      "category": ["Tool"],
+      "summary": "Interpreter for detecting UB in Rust code.",
+      "details": "Checks aliasing, invalid reads/writes at compile-time execution.",
+      "examples": [
+        "// Run with: cargo miri test\n#[test]\nfn test_no_ub() {\n    let mut x = 5;\n    let r = &mut x;\n    *r += 1;\n    assert_eq!(x, 6);\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["UB-check", "compiler"],
+      "reference": ["https://github.com/rust-lang/miri"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.raii",
+      "label": "RAII & Drop",
+      "category": ["Pattern"],
+      "summary": "Resource management via Drop and ownership.",
+      "details": "Guards for locks/files; scope-based cleanup. Compiler calls drop automatically.",
+      "examples": [
+        "struct FileGuard {\n    file: std::fs::File,\n}\n\nimpl FileGuard {\n    fn open(path: &str) -> std::io::Result<Self> {\n        let file = std::fs::File::open(path)?;\n        Ok(Self { file })\n    }\n    \n    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {\n        self.file.read(buf)\n    }\n}\n\nimpl Drop for FileGuard {\n    fn drop(&mut self) {\n        println!(\"File closed automatically\");\n    }\n}\n\nfn main() -> std::io::Result<()> {\n    let mut guard = FileGuard::open(\"example.txt\")?;\n    let mut buf = [0; 1024];\n    guard.read(&mut buf)?;\n    // File automatically closed when guard goes out of scope\n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "RAII has zero runtime overhead"
+      ],
+      "tags": ["drop", "guards", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.zero_copy",
+      "label": "Zero-Copy Parsing",
+      "category": ["Pattern"],
+      "summary": "Borrowed slices/str with lifetime ties.",
+      "details": "nom, bytemuck for POD casts (safely). Compiler verifies lifetimes.",
+      "examples": [
+        "use nom::{IResult, bytes::complete::take};\n\nfn parse_header(input: &[u8]) -> IResult<&[u8], &[u8]> {\n    take(4u8)(input)\n}\n\nfn main() {\n    let data = b\"ABCDEFGH\";\n    let (remaining, header) = parse_header(data).unwrap();\n    println!(\"Header: {:?}\", header); // b\"ABCD\"\n    println!(\"Remaining: {:?}\", remaining); // b\"EFGH\"\n}"
+      ],
+      "benchmarks": [
+        "Zero-copy parsing avoids allocation overhead"
+      ],
+      "tags": ["parsing", "borrowed", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "anti.await.hold.lock",
+      "label": "Holding Locks Across .await",
+      "category": ["AntiPattern"],
+      "summary": "Risk of deadlocks/starvation.",
+      "details": "Use scoped lock + drop before await; async-aware Mutex. Compiler can't detect this.",
+      "examples": [
+        "use tokio::sync::Mutex;\n\n// BAD: Holds lock across await point\nasync fn bad_idea(data: &Mutex<Vec<u32>>) {\n    let mut guard = data.lock().await;\n    some_async_operation().await;\n    guard.push(42);\n}\n\n// GOOD: Release lock before await\nasync fn better(data: &Mutex<Vec<u32>>) {\n    {\n        let mut guard = data.lock().await;\n        guard.push(42);\n    } // guard dropped here\n    some_async_operation().await;\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["async", "locks"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.anyhow",
+      "label": "anyhow",
+      "category": ["Crate"],
+      "summary": "Ergonomic error handling for apps.",
+      "details": "Context, backtrace, dynamic error type.",
+      "examples": [
+        "use anyhow::{Context, Result};\n\nfn main() -> Result<()> {\n    let config = std::fs::read_to_string(\"config.toml\")\n        .context(\"Failed to read config file\")?;\n    \n    let value: serde_json::Value = serde_json::from_str(&config)\n        .context(\"Failed to parse config as JSON\")?;\n    \n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "anyhow error creation: ~50ns"
+      ],
+      "tags": ["errors"],
+      "reference": ["https://docs.rs/anyhow/latest/anyhow/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.thiserror",
+      "label": "thiserror",
+      "category": ["Crate"],
+      "summary": "Derive-based error enums for libraries.",
+      "details": "Display impls, source chaining.",
+      "examples": [
+        "use thiserror::Error;\n\n#[derive(Error, Debug)]\npub enum DataError {\n    #[error(\"invalid data format\")]\n    InvalidFormat,\n    #[error(\"data too large: {0} bytes (max {1})\")]\n    TooLarge(usize, usize),\n    #[error(\"IO error\")]\n    Io(#[from] std::io::Error),\n}\n\nfn process_data(data: &[u8]) -> Result<(), DataError> {\n    if data.len() > 1024 {\n        return Err(DataError::TooLarge(data.len(), 1024));\n    }\n    // ...\n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "thiserror has zero runtime overhead"
+      ],
+      "tags": ["errors"],
+      "reference": ["https://docs.rs/thiserror/latest/thiserror/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.typestate",
+      "label": "Typestate",
+      "category": ["Pattern"],
+      "summary": "State machines encoded in types.",
+      "details": "Compile-time invalid state exclusion.",
+      "examples": [
+        "struct Request<State> {\n    url: String,\n    state: State,\n}\n\nstruct New;\nstruct Headers { headers: Vec<(String, String)> };\nstruct Body { body: Vec<u8> };\nstruct Ready;\n\nimpl Request<New> {\n    fn new(url: String) -> Self {\n        Self { url, state: New }\n    }\n    \n    fn add_header(self, key: String, value: String) -> Request<Headers> {\n        Request {\n            url: self.url,\n            state: Headers { headers: vec![(key, value)] },\n        }\n    }\n}\n\nimpl Request<Headers> {\n    fn add_header(mut self, key: String, value: String) -> Self {\n        self.state.headers.push((key, value));\n        self\n    }\n    \n    fn add_body(self, body: Vec<u8>) -> Request<Body> {\n        Request {\n            url: self.url,\n            state: Body { body },\n        }\n    }\n}\n\nimpl Request<Body> {\n    fn send(self) -> Request<Ready> {\n        // Send request...\n        Request {\n            url: self.url,\n            state: Ready,\n        }\n    }\n}\n\n// Usage ensures correct sequence:\nlet request = Request::new(\"https://example.com\".into())\n    .add_header(\"Content-Type\".into(), \"application/json\".into())\n    .add_body(br#\"{\"key\":\"value\"}\"#.to_vec())\n    .send();"
+      ],
+      "benchmarks": [
+        "Typestate has zero runtime overhead"
+      ],
+      "tags": ["state-machine", "compiler"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "testing.fuzz",
+      "label": "Fuzzing",
+      "category": ["Domain"],
+      "summary": "cargo-fuzz with libFuzzer.",
+      "details": "Minimization, corpus management, sanitizers.",
+      "examples": [
+        "// fuzz_target.rs\n#![no_main]\nuse libfuzzer_sys::fuzz_target;\n\nfuzz_target!(|data: &[u8]| {\n    if let Ok(s) = std::str::from_utf8(data) {\n        let _ = my_parser::parse(s);\n    }\n});\n\n// Run with: cargo fuzz run fuzz_target"
+      ],
+      "benchmarks": [],
+      "tags": ["fuzzing", "safety"],
+      "reference": ["https://github.com/rust-fuzz/cargo-fuzz"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "io.fs",
+      "label": "Filesystem & Paths",
+      "category": ["Std"],
+      "summary": "Path/PathBuf, OsStr/OsString.",
+      "details": "Unicode & platform peculiarities.",
+      "examples": [
+        "use std::path::{Path, PathBuf};\n\nfn find_config() -> Option<PathBuf> {\n    let home = std::env::var_os(\"HOME\")?;\n    let mut path = PathBuf::from(home);\n    path.push(\".config\");\n    path.push(\"myapp\");\n    path.push(\"config.toml\");\n    \n    if path.exists() {\n        Some(path)\n    } else {\n        None\n    }\n}"
+      ],
+      "benchmarks": [
+        "Path manipulation has minimal overhead"
+      ],
+      "tags": ["fs", "compiler"],
+      "reference": ["https://doc.rust-lang.org/std/path/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.arena",
+      "label": "Arena Allocation",
+      "category": ["Pattern"],
+      "summary": "Bump allocators for many short-lived objects.",
+      "details": "typed-arena/bumpalo; careful with lifetimes.",
+      "examples": [
+        "use typed_arena::Arena;\n\nstruct Node<'a> {\n    value: i32,\n    children: Vec<&'a Node<'a>>,\n}\n\nfn build_tree(arena: &Arena<Node>, depth: i32) -> &Node {\n    let node = arena.alloc(Node {\n        value: depth,\n        children: vec![],\n    });\n    \n    if depth > 0 {\n        node.children.push(build_tree(arena, depth - 1));\n        node.children.push(build_tree(arena, depth - 1));\n    }\n    \n    node\n}\n\nfn main() {\n    let arena = Arena::new();\n    let tree = build_tree(&arena, 3);\n    println!(\"Tree: {:?}\", tree.value);\n}"
+      ],
+      "benchmarks": [
+        "Arena allocation: ~5ns per allocation vs ~50ns for heap"
+      ],
+      "tags": ["allocators", "arena"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "anti.clone_all",
+      "label": "Clone-All Performance Trap",
+      "category": ["AntiPattern"],
+      "summary": "Unnecessary cloning masks ownership design issues.",
+      "details": "Prefer borrowing; profile allocations.",
+      "examples": [
+        "// BAD: Unnecessary cloning\nfn process_data(data: Vec<u8>) -> Vec<u8> {\n    let mut copy = data.clone();\n    copy.push(0);\n    copy\n}\n\n// BETTER: Take ownership if needed\nfn process_data(mut data: Vec<u8>) -> Vec<u8> {\n    data.push(0);\n    data\n}\n\n// BEST: Borrow when possible\nfn process_data(data: &mut [u8]) {\n    if !data.is_empty() {\n        data[0] = 0;\n    }\n}"
+      ],
+      "benchmarks": [
+        "Avoiding clones can save 50-200ns per medium-sized Vec"
+      ],
+      "tags": ["perf"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "pattern.cancel",
+      "label": "Cancellation & Timeouts",
+      "category": ["Pattern"],
+      "summary": "Use select! with cancellation tokens or timeouts.",
+      "details": "Drop futures to cancel; cooperative cancellation.",
+      "examples": [
+        "use tokio::sync::oneshot;\nuse tokio::time::{sleep, Duration, timeout};\n\n#[tokio::main]\nasync fn main() {\n    // Timeout pattern\n    match timeout(Duration::from_secs(1), async_operation()).await {\n        Ok(result) => println!(\"Success: {}\", result),\n        Err(_) => println!(\"Timeout!\"),\n    }\n    \n    // Cancellation token pattern\n    let (cancel_tx, cancel_rx) = oneshot::channel();\n    \n    tokio::spawn(async move {\n        sleep(Duration::from_secs(2)).await;\n        let _ = cancel_tx.send(());\n    });\n    \n    tokio::select! {\n        _ = cancel_rx => println!(\"Cancelled!\"),\n        val = long_operation() => println!(\"Done: {}\", val),\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["async", "cancel"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.reqwest",
+      "label": "reqwest",
+      "category": ["Crate"],
+      "summary": "HTTP client (sync/async).",
+      "details": "TLS features, streaming bodies.",
+      "examples": [
+        "use reqwest;\n\n#[tokio::main]\nasync fn main() -> Result<(), reqwest::Error> {\n    // Async GET\n    let response = reqwest::get(\"https://httpbin.org/get\").await?;\n    println!(\"Status: {}\", response.status());\n    \n    // Async POST with JSON\n    let client = reqwest::Client::new();\n    let res = client.post(\"https://httpbin.org/post\")\n        .json(&serde_json::json!({ \"key\": \"value\" }))\n        .send()\n        .await?;\n    \n    // Streaming response\n    let mut stream = client.get(\"https://example.com/large\")\n        .send()\n        .await?\n        .bytes_stream();\n    \n    while let Some(chunk) = stream.next().await {\n        println!(\"Chunk: {:?}\", chunk?.len());\n    }\n    \n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "Reqwest async requests: ~10ms for simple HTTP/1.1 requests"
+      ],
+      "tags": ["http"],
+      "reference": ["https://docs.rs/reqwest/latest/reqwest/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.axum",
+      "label": "axum",
+      "category": ["Crate"],
+      "summary": "Tokio + tower based web framework.",
+      "details": "Extractors, middleware, tower layers.",
+      "examples": [
+        "use axum::{Router, routing::get, extract::Path};\nuse std::net::SocketAddr;\n\n#[tokio::main]\nasync fn main() {\n    let app = Router::new()\n        .route(\"/\", get(|| async { \"Hello, World!\" }))\n        .route(\"/users/:id\", get(|Path(id): Path<u64>| async move {\n            format!(\"User ID: {}\", id)\n        }));\n    \n    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));\n    axum::Server::bind(&addr)\n        .serve(app.into_make_service())\n        .await\n        .unwrap();\n}"
+      ],
+      "benchmarks": [
+        "Axum can handle 100k+ requests/sec on modern hardware"
+      ],
+      "tags": ["web", "server"],
+      "reference": ["https://docs.rs/axum/latest/axum/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.serde_json",
+      "label": "serde_json",
+      "category": ["Crate"],
+      "summary": "JSON ser/de with Value and from_reader.",
+      "details": "Borrowed vs owned; raw value.",
+      "examples": [
+        "use serde_json::{json, Value};\n\nfn main() -> Result<(), serde_json::Error> {\n    // Parse JSON string\n    let data: Value = serde_json::from_str(r#\"{\"key\":\"value\"}\"#)?;\n    println!(\"Parsed: {}\", data[\"key\"]);\n    \n    // Create JSON value\n    let value = json!({\n        \"name\": \"Alice\",\n        \"age\": 30,\n        \"phones\": [\n            \"123-456-7890\",\n            \"456-789-0123\"\n        ]\n    });\n    \n    // Serialize to string\n    println!(\"Serialized: {}\", value.to_string());\n    \n    Ok(())\n}"
+      ],
+      "benchmarks": [
+        "serde_json: ~500MB/s parse, ~300MB/s serialize on modern CPU"
+      ],
+      "tags": ["json"],
+      "reference": ["https://docs.rs/serde_json/latest/serde_json/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.crossbeam",
+      "label": "crossbeam",
+      "category": ["Crate"],
+      "summary": "Channels, memory management for concurrency.",
+      "details": "Work-stealing deques, epoch GC.",
+      "examples": [
+        "use crossbeam::channel;\nuse crossbeam::scope;\n\nfn main() {\n    // Bounded channel\n    let (s, r) = channel::bounded(1);\n    \n    // Scoped threads\n    scope(|scope| {\n        scope.spawn(|_| {\n            s.send(\"Hello from thread\").unwrap();\n        });\n        \n        println!(\"{}\", r.recv().unwrap());\n    }).unwrap();\n    \n    // Epoch-based memory reclamation\n    let guard = crossbeam::epoch::pin();\n    let my_data = 42;\n    let ptr = guard.defer_destroy(Box::new(my_data));\n    // ...\n    guard.flush();\n}"
+      ],
+      "benchmarks": [
+        "crossbeam channel: ~50ns send/receive"
+      ],
+      "tags": ["concurrency"],
+      "reference": ["https://docs.rs/crossbeam/latest/crossbeam/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "crate.rayon",
+      "label": "rayon",
+      "category": ["Crate"],
+      "summary": "Data-parallel iterators and thread pools.",
+      "details": "Parallel iter adapters with safe joins.",
+      "examples": [
+        "use rayon::prelude::*;\n\nfn main() {\n    // Parallel iteration\n    let sum: i32 = (0..1000)\n        .into_par_iter()\n        .map(|i| i * i)\n        .sum();\n    println!(\"Sum: {}\", sum);\n    \n    // Parallel sort\n    let mut vec = vec![5, 3, 1, 4, 2];\n    vec.par_sort();\n    println!(\"Sorted: {:?}\", vec);\n    \n    // Parallel reduce\n    let max = vec.par_iter().max().unwrap();\n    println!(\"Max: {}\", max);\n}"
+      ],
+      "benchmarks": [
+        "Rayon can achieve near-linear speedup for CPU-bound tasks"
+      ],
+      "tags": ["parallel"],
+      "reference": ["https://docs.rs/rayon/latest/rayon/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "security.unsafe.audit",
+      "label": "Unsafe Block Audits",
+      "category": ["Pattern"],
+      "summary": "Document invariants at unsafe sites.",
+      "details": "Explain why it's safe; add tests and Miri checks.",
+      "examples": [
+        "/// SAFETY: This function is safe because:\n/// 1. The pointer must be non-null and properly aligned\n/// 2. The memory must be initialized\n/// 3. The caller must ensure exclusive access\nunsafe fn unsafe_operation(ptr: *mut u8, len: usize) {\n    // ...\n}\n\n#[test]\nfn test_unsafe_operation() {\n    let mut data = vec![0u8; 10];\n    unsafe {\n        unsafe_operation(data.as_mut_ptr(), data.len());\n    }\n    assert_eq!(data[0], 0);\n}\n\n// Run with: cargo miri test"
+      ],
+      "benchmarks": [],
+      "tags": ["audit"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "release.msrv",
+      "label": "MSRV Policy",
+      "category": ["Pattern"],
+      "summary": "Minimum Supported Rust Version for crates.",
+      "details": "Semver + MSRV pinning in CI.",
+      "examples": [
+        "// In Cargo.toml\n[package]\nrust-version = \"1.56.0\"\n\n// In CI (GitHub Actions example):\n// jobs:\n//   test:\n//     runs-on: ubuntu-latest\n//     steps:\n//       - uses: actions-rs/toolchain@v1\n//         with:\n//           profile: minimal\n//           toolchain: 1.56.0\n//           override: true"
+      ],
+      "benchmarks": [],
+      "tags": ["semver", "ci"],
+      "reference": [],
+      "since": "1.56.0"
+    },
+    {
+      "id": "compiler.mir",
+      "label": "MIR (Mid-level IR)",
+      "category": ["Compiler"],
+      "summary": "Rust's mid-level intermediate representation.",
+      "details": "Used for borrow checking and optimizations before LLVM IR.",
+      "examples": [
+        "// View MIR with:\n// rustc --emit=mir -Z mir-opt-level=3 src/main.rs\n\n// Example function:\nfn add(a: i32, b: i32) -> i32 {\n    a + b\n}\n\n/* MIR output:\nfn add(_1: i32, _2: i32) -> i32 {\n    let mut _0: i32;\n    \n    bb0: {\n        _0 = Add(_1, _2);\n        return;\n    }\n}\n*/"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/mir/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.llvm",
+      "label": "LLVM Backend",
+      "category": ["Compiler"],
+      "summary": "Rust's primary code generation backend.",
+      "details": "Produces optimized machine code through LLVM.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/backend/llvm.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.trait.res",
+      "label": "Trait Resolution",
+      "category": ["Compiler"],
+      "summary": "How the compiler resolves trait implementations.",
+      "details": "Coherence, orphan rules, negative reasoning.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/traits/resolution.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.mono",
+      "label": "Monomorphization",
+      "category": ["Compiler"],
+      "summary": "Generating concrete implementations for generics.",
+      "details": "Causes code bloat but enables optimizations.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/backend/monomorph.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.lto",
+      "label": "LTO (Link Time Optimization)",
+      "category": ["Compiler"],
+      "summary": "Whole-program optimization at link time.",
+      "details": "Can significantly improve performance but increases compile time.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\nlto = true\ncodegen-units = 1"
+      ],
+      "benchmarks": [
+        "LTO can improve performance by 10-30% for release builds"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#lto"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.inline",
+      "label": "Inlining",
+      "category": ["Compiler"],
+      "summary": "Function call optimization.",
+      "details": "Controlled with #[inline] attributes and compiler heuristics.",
+      "examples": [
+        "#[inline(always)]\nfn always_inline() { /* ... */ }\n\n#[inline]\nfn maybe_inline() { /* ... */ }\n\n// In Cargo.toml\n[profile.release]\ninline-threshold = 100"
+      ],
+      "benchmarks": [
+        "Inlining small functions can save 5-20ns per call"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/reference/attributes/codegen.html#the-inline-attribute"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.const.prop",
+      "label": "Constant Propagation",
+      "category": ["Compiler"],
+      "summary": "Compile-time evaluation of constants.",
+      "details": "Works with const fn and literals.",
+      "examples": [
+        "const fn square(x: i32) -> i32 { x * x }\nconst X: i32 = square(5); // Evaluated at compile-time\n\nfn main() {\n    println!(\"{}\", X); // No runtime computation\n}"
+      ],
+      "benchmarks": [
+        "Const propagation eliminates runtime computation"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/constant-evaluation.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.dead.code",
+      "label": "Dead Code Elimination",
+      "category": ["Compiler"],
+      "summary": "Removal of unused code.",
+      "details": "Works with LTO to remove unused generics.",
+      "examples": [
+        "fn used_function() { println!(\"I'm used!\"); }\nfn unused_function() { println!(\"I'm unused!\"); }\n\nfn main() {\n    used_function();\n    // unused_function is eliminated\n}"
+      ],
+      "benchmarks": [
+        "DCE reduces binary size and improves cache locality"
+      ],
+      "tags": ["optimization"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.borrow.ck",
+      "label": "Borrow Checker",
+      "category": ["Compiler"],
+      "summary": "Ensures memory safety at compile time.",
+      "details": "Uses MIR to analyze lifetimes and borrowing.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/borrow_check.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.nll",
+      "label": "Non-Lexical Lifetimes (NLL)",
+      "category": ["Compiler"],
+      "summary": "More precise lifetime analysis.",
+      "details": "Allows borrows to end when they're no longer used.",
+      "examples": [
+        "fn main() {\n    let mut x = 5;\n    let y = &x; // First borrow\n    println!(\"{}\", y);\n    // y is no longer used after this point\n    let z = &mut x; // Now allowed (with NLL)\n    *z += 1;\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html#non-lexical-lifetimes"],
+      "since": "1.31.0"
+    },
+    {
+      "id": "compiler.pgo",
+      "label": "Profile-Guided Optimization (PGO)",
+      "category": ["Compiler"],
+      "summary": "Optimize based on runtime profiles.",
+      "details": "Requires instrumentation build and profile collection.",
+      "examples": [
+        "// Build with instrumentation\nRUSTFLAGS=\"-C profile-generate=/tmp/pgo-data\" cargo build --release\n\n// Run training workload\n./target/release/myapp --training\n\n// Merge profiles\nllvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data\n\n// Build with PGO\nRUSTFLAGS=\"-C profile-use=/tmp/pgo-data/merged.profdata\" cargo build --release"
+      ],
+      "benchmarks": [
+        "PGO can improve performance by 10-30% on critical paths"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/rustc/profile-guided-optimization.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.cranelift",
+      "label": "Cranelift Backend",
+      "category": ["Compiler"],
+      "summary": "Alternative codegen backend for faster debug builds.",
+      "details": "Experimental, not as optimized as LLVM.",
+      "examples": [
+        "// In .cargo/config.toml\n[unstable]\nbuild-std = [\"core\", \"alloc\", \"std\"]\nbuild-std-features = [\"compiler-builtins-mem\"]\n\n// Build with:\nRUSTFLAGS=\"-Z codegen-backend=cranelift\" cargo +nightly build"
+      ],
+      "benchmarks": [
+        "Cranelift can reduce debug build times by 2-3x"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://github.com/bytecodealliance/rustc_codegen_cranelift"],
+      "since": "nightly"
+    },
+    {
+      "id": "compiler.meta",
+      "label": "Compiler Metadata",
+      "category": ["Compiler"],
+      "summary": "Information for codegen and linking.",
+      "details": "Used for crate dependencies and linking.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/backend/metadata.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.exp",
+      "label": "Macro Expansion",
+      "category": ["Compiler"],
+      "summary": "How procedural and declarative macros are processed.",
+      "details": "Hygiene, token trees, and expansion order.",
+      "examples": [
+        "// View macro expansion with:\n// cargo expand --lib\n\nmacro_rules! my_vec {\n    ($($x:expr),*) => {\n        {\n            let mut temp_vec = Vec::new();\n            $(temp_vec.push($x);)*\n            temp_vec\n        }\n    };\n}\n\nfn main() {\n    let v = my_vec![1, 2, 3];\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/macro-expansion.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.codegen",
+      "label": "Code Generation",
+      "category": ["Compiler"],
+      "summary": "Final stage of compilation.",
+      "details": "Translates MIR/LLVM IR to machine code.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/backend/codegen.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.opt.pass",
+      "label": "Optimization Passes",
+      "category": ["Compiler"],
+      "summary": "LLVM optimization passes applied to Rust code.",
+      "details": "Controlled with -C opt-level.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\nopt-level = 3\n\n[profile.dev]\nopt-level = 0"
+      ],
+      "benchmarks": [
+        "opt-level=3 can improve performance by 2-10x over opt-level=0"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/rustc/codegen-options/index.html#opt-level"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.panic.abort",
+      "label": "Panic=Abort",
+      "category": ["Compiler"],
+      "summary": "Configure panics to abort instead of unwind.",
+      "details": "Reduces binary size but prevents catch_unwind.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\npanic = \"abort\""
+      ],
+      "benchmarks": [
+        "panic=abort can reduce binary size by 10-20%"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#panic"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.incremental",
+      "label": "Incremental Compilation",
+      "category": ["Compiler"],
+      "summary": "Faster recompilation by caching artifacts.",
+      "details": "Works best for debug builds.",
+      "examples": [
+        "// In Cargo.toml\n[profile.dev]\nincremental = true"
+      ],
+      "benchmarks": [
+        "Incremental compilation can reduce rebuild times by 50-90%"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#incremental"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.strip",
+      "label": "Symbol Stripping",
+      "category": ["Compiler"],
+      "summary": "Remove debug symbols from binaries.",
+      "details": "Reduces binary size significantly.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\nstrip = true\n\n// Or with RUSTFLAGS\nRUSTFLAGS=\"-C strip=symbols\" cargo build --release"
+      ],
+      "benchmarks": [
+        "Stripping can reduce binary size by 50-90%"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/rustc/codegen-options/index.html#strip"],
+      "since": "1.59.0"
+    },
+    {
+      "id": "compiler.debuginfo",
+      "label": "Debug Information",
+      "category": ["Compiler"],
+      "summary": "Control generation of debug symbols.",
+      "details": "Affects binary size and debugging capability.",
+      "examples": [
+        "// In Cargo.toml\n[profile.dev]\ndebug = 2\n\n[profile.release]\ndebug = 0"
+      ],
+      "benchmarks": [
+        "debug=2 can increase binary size by 2-10x"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#debug"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.embed.llvm",
+      "label": "Embedded LLVM",
+      "category": ["Compiler"],
+      "summary": "Rust's built-in LLVM version.",
+      "details": "Can affect performance and supported features.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/backend/llvm.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.target.features",
+      "label": "Target Features",
+      "category": ["Compiler"],
+      "summary": "CPU-specific optimizations.",
+      "details": "Enables SIMD and other architecture-specific instructions.",
+      "examples": [
+        "// In .cargo/config.toml\n[build]\nrustflags = [\"-C\", \"target-cpu=native\"]\n\n// Or for specific features\nrustflags = [\"-C\", \"target-feature=+avx2,+fma\"]"
+      ],
+      "benchmarks": [
+        "Target-specific optimizations can improve performance by 2-10x"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/rustc/codegen-options/index.html#target-cpu"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.codegen.units",
+      "label": "Codegen Units",
+      "category": ["Compiler"],
+      "summary": "Parallel code generation units.",
+      "details": "Tradeoff between compile time and optimization.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\ncodegen-units = 16\n\n[profile.bench]\ncodegen-units = 1"
+      ],
+      "benchmarks": [
+        "codegen-units=1 can improve performance by 5-10% but increases compile time"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.thin.lto",
+      "label": "ThinLTO",
+      "category": ["Compiler"],
+      "summary": "Scalable link-time optimization.",
+      "details": "Good balance between optimization and compile time.",
+      "examples": [
+        "// In Cargo.toml\n[profile.release]\nlto = \"thin\""
+      ],
+      "benchmarks": [
+        "ThinLTO provides 80% of full LTO benefits with 50% less compile time"
+      ],
+      "tags": ["optimization"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#lto"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.overflow.checks",
+      "label": "Overflow Checks",
+      "category": ["Compiler"],
+      "summary": "Runtime integer overflow detection.",
+      "details": "Disabled in release mode by default.",
+      "examples": [
+        "// In Cargo.toml\n[profile.dev]\noverflow-checks = true\n\n[profile.release]\noverflow-checks = false"
+      ],
+      "benchmarks": [
+        "Overflow checks add ~5-10% runtime overhead"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.symbol.mangling",
+      "label": "Symbol Mangling",
+      "category": ["Compiler"],
+      "summary": "How Rust names are encoded in binaries.",
+      "details": "v0 is current standard.",
+      "examples": [
+        "// View mangled names with:\n// nm target/debug/myapp\n\n// Demangle with:\n// rustfilt < mangled_names.txt"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rust-lang.github.io/rfcs/2603-rust-symbol-name-mangling-v0.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.split.debuginfo",
+      "label": "Split Debuginfo",
+      "category": ["Compiler"],
+      "summary": "Separate debug information files.",
+      "details": "Reduces binary size while preserving debug capability.",
+      "examples": [
+        "// In Cargo.toml\n[profile.dev]\nsplit-debuginfo = \"unpacked\""
+      ],
+      "benchmarks": [
+        "Split debuginfo reduces binary size while preserving debug capability"
+      ],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/profiles.html#split-debuginfo"],
+      "since": "1.65.0"
+    },
+    {
+      "id": "compiler.emit.asm",
+      "label": "Emit Assembly",
+      "category": ["Compiler"],
+      "summary": "Generate assembly output.",
+      "details": "Useful for optimization analysis.",
+      "examples": [
+        "// Generate assembly\nrustc --emit=asm -C opt-level=3 src/main.rs\n\n// View with Intel syntax\nrustc --emit=asm -C \"llvm-args=-x86-asm-syntax=intel\" src/main.rs"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/rustc/command-line-arguments.html#--emit-emit-output-of-the-given-type"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.emit.llvm.ir",
+      "label": "Emit LLVM IR",
+      "category": ["Compiler"],
+      "summary": "Generate LLVM intermediate representation.",
+      "details": "Useful for low-level optimization analysis.",
+      "examples": [
+        "// Generate LLVM IR\nrustc --emit=llvm-ir -C opt-level=3 src/main.rs"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/rustc/command-line-arguments.html#--emit-emit-output-of-the-given-type"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.rustc.attrs",
+      "label": "rustc Attributes",
+      "category": ["Compiler"],
+      "summary": "Compiler-specific attributes.",
+      "details": "Control code generation and optimization.",
+      "examples": [
+        "#[rustc_builtin_macro]\nmacro_rules! include { /* ... */ }\n\n#[inline(always)]\nfn must_inline() {}\n\n#[cold]\nfn unlikely_path() {}\n\n#[target_feature(enable = \"avx2\")]\nunsafe fn avx2_operation() {}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/nightly/nightly-rustc/rustc_attr/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.unstable.features",
+      "label": "Unstable Features",
+      "category": ["Compiler"],
+      "summary": "Experimental language features.",
+      "details": "Requires nightly Rust and feature flags.",
+      "examples": [
+        "// In lib.rs or main.rs\n#![feature(const_generics)]\n#![feature(unsized_locals)]\n\n// Requires nightly Rust\n// cargo +nightly build"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/unstable-book/"],
+      "since": "nightly"
+    },
+    {
+      "id": "compiler.rustdoc",
+      "label": "rustdoc",
+      "category": ["Compiler"],
+      "summary": "Documentation generator.",
+      "details": "Integrates with compiler for accurate docs.",
+      "examples": [
+        "// Generate docs\ncargo doc --open\n\n// Document private items\ncargo doc --document-private-items\n\n// Include dependencies\ncargo doc --no-deps"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/rustdoc/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.clippy.lints",
+      "label": "Clippy Lints",
+      "category": ["Compiler"],
+      "summary": "Additional lints for Rust code.",
+      "details": "Compiler plugin for idiomatic code.",
+      "examples": [
+        "// Allow a specific lint\n#[allow(clippy::too_many_arguments)]\nfn many_args(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32) {}\n\n// Deny a lint category\n#![deny(clippy::pedantic)]"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://github.com/rust-lang/rust-clippy"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.rustfmt.config",
+      "label": "rustfmt Configuration",
+      "category": ["Compiler"],
+      "summary": "Code formatting options.",
+      "details": "Integrates with compiler for consistent style.",
+      "examples": [
+        "// rustfmt.toml\nmax_width = 100\nuse_small_heuristics = \"Max\"\n\n// Format with:\n// cargo fmt"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://github.com/rust-lang/rustfmt"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.cfg.attrs",
+      "label": "Configuration Attributes",
+      "category": ["Compiler"],
+      "summary": "Conditional compilation.",
+      "details": "Processed by compiler to include/exclude code.",
+      "examples": [
+        "#[cfg(target_os = \"linux\")]\nfn linux_specific() {}\n\n#[cfg(feature = \"serde\")]\nmod serde_impl { /* ... */ }\n\n// Custom cfg\n#[cfg(my_custom_flag)]\nfn custom_enabled() {}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/conditional-compilation.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.test.harness",
+      "label": "Test Harness",
+      "category": ["Compiler"],
+      "summary": "Built-in test framework.",
+      "details": "Compiler integration for #[test] and #[bench].",
+      "examples": [
+        "#[test]\nfn test_addition() {\n    assert_eq!(2 + 2, 4);\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn test_foo() {\n        // ...\n    }\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch11-00-testing.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.benchmark.tests",
+      "label": "Benchmark Tests",
+      "category": ["Compiler"],
+      "summary": "Performance testing.",
+      "details": "Requires external crate (e.g., criterion) for stable Rust.",
+      "examples": [
+        "// With criterion\nuse criterion::{black_box, criterion_group, criterion_main, Criterion};\n\nfn fibonacci(n: u64) -> u64 {\n    match n {\n        0 => 1,\n        1 => 1,\n        n => fibonacci(n-1) + fibonacci(n-2),\n    }\n}\n\nfn criterion_benchmark(c: &mut Criterion) {\n    c.bench_function(\"fib 20\", |b| b.iter(|| fibonacci(black_box(20))));\n}\n\ncriterion_group!(benches, criterion_benchmark);\ncriterion_main!(benches);"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://bheisler.github.io/criterion.rs/book/index.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.plugins",
+      "label": "Compiler Plugins",
+      "category": ["Compiler"],
+      "summary": "Custom compiler extensions.",
+      "details": "Requires nightly Rust.",
+      "examples": [
+        "// Requires nightly\n#![feature(plugin)]\n#![plugin(my_plugin)]\n\n// Or for lint plugins\n#![plugin(clippy)]"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/unstable-book/language-features/plugin.html"],
+      "since": "nightly"
+    },
+    {
+      "id": "compiler.proc.macro",
+      "label": "Procedural Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for proc macros.",
+      "details": "TokenStream manipulation and hygiene.",
+      "examples": [
+        "use proc_macro::TokenStream;\n\n#[proc_macro]\npub fn make_answer(_item: TokenStream) -> TokenStream {\n    \"fn answer() -> u32 { 42 }\".parse().unwrap()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "compiler.derive.macros",
+      "label": "Derive Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for #[derive].",
+      "details": "Generates trait implementations.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, DeriveInput};\nuse quote::quote;\n\n#[proc_macro_derive(HelloMacro)]\npub fn hello_macro_derive(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    \n    let expanded = quote! {\n        impl HelloMacro for #name {\n            fn hello_macro() {\n                println!(\"Hello, Macro! My name is {}!\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(expanded)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "compiler.attr.macros",
+      "label": "Attribute Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for #[attribute].",
+      "details": "Modifies annotated items.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, ItemFn};\nuse quote::quote;\n\n#[proc_macro_attribute]\npub fn trace(_attr: TokenStream, item: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(item as ItemFn);\n    let name = &input.sig.ident;\n    \n    let output = quote! {\n        #input\n        \n        impl #name {\n            fn trace(&self) {\n                println!(\"Tracing {}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(output)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros"],
+      "since": "1.30.0"
+    },
+    {
+      "id": "compiler.function.macros",
+      "label": "Function-like Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for macro_rules! alternatives.",
+      "details": "More powerful than macro_rules!.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::parse;\nuse quote::quote;\n\n#[proc_macro]\npub fn sql(input: TokenStream) -> TokenStream {\n    let stmt = parse::<String>(input).unwrap();\n    \n    quote! {\n        {\n            let mut stmt = String::new();\n            stmt.push_str(#stmt);\n            stmt\n        }\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros"],
+      "since": "1.45.0"
+    },
+    {
+      "id": "compiler.hygiene",
+      "label": "Hygiene",
+      "category": ["Compiler"],
+      "summary": "Variable capture and scoping in macros.",
+      "details": "Prevents identifier collisions.",
+      "examples": [
+        "macro_rules! hygienic {\n    ($name:ident) => {\n        let $name = 42;\n    };\n}\n\nfn main() {\n    hygienic!(x);\n    println!(\"{}\", x); // Works because of hygiene\n    \n    let x = \"not a number\";\n    hygienic!(x);\n    println!(\"{}\", x); // Still \"not a number\"\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#hygiene"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.export",
+      "label": "Macro Export",
+      "category": ["Compiler"],
+      "summary": "Making macros available to other crates.",
+      "details": "Requires #[macro_export].",
+      "examples": [
+        "// In lib.rs\n#[macro_export]\nmacro_rules! my_macro {\n    () => { /* ... */ };\n}\n\n// In another crate\nuse my_crate::my_macro;"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html#how-to-write-a-custom-derive-macro"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.use",
+      "label": "Macro Use",
+      "category": ["Compiler"],
+      "summary": "Importing macros from other crates.",
+      "details": "Requires #[macro_use] or proper use statements.",
+      "examples": [
+        "// Old style\n#[macro_use]\nextern crate serde_derive;\n\n// New style\nuse serde_derive::{Serialize, Deserialize};"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#the-macro_use-attribute"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.rules",
+      "label": "macro_rules!",
+      "category": ["Compiler"],
+      "summary": "Declarative macro system.",
+      "details": "Pattern matching on token trees.",
+      "examples": [
+        "macro_rules! vec_of {\n    ($($x:expr),*) => {\n        {\n            let mut temp_vec = Vec::new();\n            $(temp_vec.push($x);)*\n            temp_vec\n        }\n    };\n}\n\nfn main() {\n    let v = vec_of![1, 2, 3];\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.edition",
+      "label": "Edition",
+      "category": ["Compiler"],
+      "summary": "Language edition (2015, 2018, 2021).",
+      "details": "Affects syntax and behavior.",
+      "examples": [
+        "// In Cargo.toml\n[package]\nedition = \"2021\""
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/edition-guide/"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.features",
+      "label": "Feature Flags",
+      "category": ["Compiler"],
+      "summary": "Unstable or experimental features.",
+      "details": "Requires nightly Rust.",
+      "examples": [
+        "// In lib.rs or main.rs\n#![feature(const_generics)]\n\n// Requires nightly\n// cargo +nightly build"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/unstable-book/"],
+      "since": "nightly"
+    },
+    {
+      "id": "compiler.crate.features",
+      "label": "Crate Features",
+      "category": ["Compiler"],
+      "summary": "Optional functionality in crates.",
+      "details": "Controlled with feature flags in Cargo.toml.",
+      "examples": [
+        "// In Cargo.toml\n[features]\ndefault = [\"std\"]\nstd = []\n\n// In lib.rs\n#[cfg(feature = \"std\")]\nuse std::collections::HashMap;"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/features.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.build.scripts",
+      "label": "Build Scripts",
+      "category": ["Compiler"],
+      "summary": "Custom build-time code execution.",
+      "details": "build.rs files for code generation, etc.",
+      "examples": [
+        "// build.rs\nfn main() {\n    println!(\"cargo:rustc-link-search=native=/usr/local/lib\");\n    println!(\"cargo:rustc-link-lib=dylib=foo\");\n    \n    // Generate code\n    let out_dir = std::env::var(\"OUT_DIR\").unwrap();\n    std::fs::write(\n        format!(\"{}/generated.rs\", out_dir),\n        \"pub const MESSAGE: &str = \\\"Hello from build.rs\\\";\",\n    ).unwrap();\n}\n\n// In lib.rs\ninclude!(concat!(env!(\"OUT_DIR\"), \"/generated.rs\"));"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/build-scripts.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.proc.macro.derive",
+      "label": "Derive Procedural Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for #[derive] macros.",
+      "details": "Generate trait implementations automatically.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, DeriveInput};\nuse quote::quote;\n\n#[proc_macro_derive(MyDerive)]\npub fn my_derive(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    \n    let expanded = quote! {\n        impl MyTrait for #name {\n            fn my_function(&self) {\n                println!(\"Hello from {:?}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(expanded)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "compiler.proc.macro.attr",
+      "label": "Attribute Procedural Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for #[attribute] macros.",
+      "details": "Modify annotated items.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, ItemFn};\nuse quote::quote;\n\n#[proc_macro_attribute]\npub fn log_entry(_attr: TokenStream, item: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(item as ItemFn);\n    let name = &input.sig.ident;\n    \n    let output = quote! {\n        #input\n        \n        impl #name {\n            fn log(&self) {\n                println!(\"Logging {}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(output)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros"],
+      "since": "1.30.0"
+    },
+    {
+      "id": "compiler.proc.macro.fn",
+      "label": "Function-like Procedural Macros",
+      "category": ["Compiler"],
+      "summary": "Compiler integration for macro!(...) syntax.",
+      "details": "More powerful than macro_rules!.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::parse;\nuse quote::quote;\n\n#[proc_macro]\npub fn make_struct(input: TokenStream) -> TokenStream {\n    let name = parse::<syn::Ident>(input).unwrap();\n    \n    quote! {\n        struct #name {\n            field: i32,\n        }\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros"],
+      "since": "1.45.0"
+    },
+    {
+      "id": "compiler.macro.hygiene",
+      "label": "Macro Hygiene",
+      "category": ["Compiler"],
+      "summary": "Preventing identifier capture in macros.",
+      "details": "Automatic in procedural macros, manual in macro_rules!.",
+      "examples": [
+        "macro_rules! hygienic {\n    ($val:expr) => {\n        let x = $val;\n        println!(\"x = {}\", x);\n    };\n}\n\nfn main() {\n    let x = 42;\n    hygienic!(x + 1); // Doesn't interfere with outer x\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#hygiene"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.import",
+      "label": "Macro Import",
+      "category": ["Compiler"],
+      "summary": "Bringing macros into scope.",
+      "details": "Modern use syntax vs legacy #[macro_use].",
+      "examples": [
+        "// Modern way\nuse some_crate::some_macro;\n\n// Legacy way\n#[macro_use]\nextern crate some_crate;"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#the-macro_use-attribute"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.export.crate",
+      "label": "Macro Export at Crate Level",
+      "category": ["Compiler"],
+      "summary": "Making all macros available.",
+      "details": "Legacy #[macro_export] at crate root.",
+      "examples": [
+        "// In lib.rs\n#[macro_export]\nmacro_rules! my_macro {\n    () => { /* ... */ };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#the-macro_export-attribute"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.path",
+      "label": "Macro Paths",
+      "category": ["Compiler"],
+      "summary": "Referencing macros with paths.",
+      "details": "$crate for internal macro references.",
+      "examples": [
+        "macro_rules! helper {\n    () => { /* ... */ };\n}\n\n#[macro_export]\nmacro_rules! public {\n    () => {\n        $crate::helper!();\n    };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#path-based-scope"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.matchers",
+      "label": "Macro Matchers",
+      "category": ["Compiler"],
+      "summary": "Pattern matching in macro_rules!.",
+      "details": "expr, stmt, ident, etc.",
+      "examples": [
+        "macro_rules! my_macro {\n    ($x:expr) => { /* ... */ };\n    ($x:ident) => { /* ... */ };\n    ($x:ty) => { /* ... */ };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.repetition",
+      "label": "Macro Repetition",
+      "category": ["Compiler"],
+      "summary": "Repeating patterns in macros.",
+      "details": "$(...)*, $(...)+, $(...),* syntax.",
+      "examples": [
+        "macro_rules! vec_of {\n    ($($x:expr),*) => {\n        {\n            let mut temp_vec = Vec::new();\n            $(temp_vec.push($x);)*\n            temp_vec\n        }\n    };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#repetitions"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.debug",
+      "label": "Macro Debugging",
+      "category": ["Compiler"],
+      "summary": "Tools for debugging macros.",
+      "details": "cargo expand, --pretty=expanded.",
+      "examples": [
+        "// View expanded macros\ncargo expand\n\n// Or with rustc\nrustc -Z unstable-options --pretty=expanded src/main.rs"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://github.com/dtolnay/cargo-expand"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.recursion",
+      "label": "Macro Recursion",
+      "category": ["Compiler"],
+      "summary": "Macros calling themselves.",
+      "details": "Useful for parsing complex syntax.",
+      "examples": [
+        "macro_rules! parse_expr {\n    ($x:expr) => { $x };\n    (($($x:tt)*)) => { parse_expr!($($x)*) };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/macros-by-example.html#recursive-macros"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.tt.muncher",
+      "label": "TT Muncher",
+      "category": ["Compiler"],
+      "summary": "Token tree processing pattern.",
+      "details": "Process tokens one at a time recursively.",
+      "examples": [
+        "macro_rules! calculate {\n    (add $x:expr) => { $x };\n    (add $x:expr, $($rest:tt)*) => {\n        $x + calculate!(add $($rest)*)\n    };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": [],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.incremental",
+      "label": "Incremental Macro Processing",
+      "category": ["Compiler"],
+      "summary": "How macros interact with incremental compilation.",
+      "details": "Affects rebuild performance.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://rustc-dev-guide.rust-lang.org/queries/incremental-compilation.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.stability",
+      "label": "Macro Stability",
+      "category": ["Compiler"],
+      "summary": "Macros and semver compatibility.",
+      "details": "Public macros are part of API stability.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/cargo/reference/semver.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.performance",
+      "label": "Macro Performance",
+      "category": ["Compiler"],
+      "summary": "Impact of macros on compile time.",
+      "details": "Complex macros can slow down compilation.",
+      "examples": [],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://blog.rust-lang.org/2016/05/13/rustup.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.error",
+      "label": "Macro Error Reporting",
+      "category": ["Compiler"],
+      "summary": "Generating helpful error messages.",
+      "details": "compile_error! and custom diagnostics.",
+      "examples": [
+        "macro_rules! require {\n    ($cond:expr) => {\n        if !$cond {\n            compile_error!(\"Condition failed\");\n        }\n    };\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/std/macro.compile_error.html"],
+      "since": "1.20.0"
+    },
+    {
+      "id": "compiler.macro.span",
+      "label": "Macro Spans",
+      "category": ["Compiler"],
+      "summary": "Source location information in macros.",
+      "details": "Important for error reporting.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse quote::quote;\nuse syn::spanned::Spanned;\n\n#[proc_macro]\npub fn my_macro(input: TokenStream) -> TokenStream {\n    let expr = syn::parse::<syn::Expr>(input).unwrap();\n    let span = expr.span();\n    \n    quote_spanned! {span=>\n        compile_error!(\"This expression is not allowed\");\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://docs.rs/syn/latest/syn/spanned/trait.Spanned.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.derive.helper",
+      "label": "Derive Helper Attributes",
+      "category": ["Compiler"],
+      "summary": "Attributes for derive macros.",
+      "details": "#[helper] attributes in derive macros.",
+      "examples": [
+        "#[derive(MyDerive)]\n#[my_helper(option)]\nstruct MyStruct;\n\n// In the proc macro:\nlet helper_attrs = input.attrs.iter().filter(|a| a.path.is_ident(\"my_helper\"));"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.custom.derive",
+      "label": "Custom Derive Macros",
+      "category": ["Compiler"],
+      "summary": "Creating #[derive] macros.",
+      "details": "Generate trait implementations automatically.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, DeriveInput};\nuse quote::quote;\n\n#[proc_macro_derive(MyDerive)]\npub fn my_derive(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    \n    let expanded = quote! {\n        impl MyTrait for #name {\n            fn my_function(&self) {\n                println!(\"Hello from {:?}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(expanded)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "compiler.macro.attribute",
+      "label": "Attribute Macros",
+      "category": ["Compiler"],
+      "summary": "Creating #[attribute] macros.",
+      "details": "Modify annotated items.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, ItemFn};\nuse quote::quote;\n\n#[proc_macro_attribute]\npub fn my_attribute(_attr: TokenStream, item: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(item as ItemFn);\n    let name = &input.sig.ident;\n    \n    let output = quote! {\n        #input\n        \n        impl #name {\n            fn helper(&self) {\n                println!(\"Helping {}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(output)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros"],
+      "since": "1.30.0"
+    },
+    {
+      "id": "compiler.macro.function",
+      "label": "Function-like Macros",
+      "category": ["Compiler"],
+      "summary": "Creating macro!(...) syntax.",
+      "details": "More powerful than macro_rules!.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::parse;\nuse quote::quote;\n\n#[proc_macro]\npub fn my_macro(input: TokenStream) -> TokenStream {\n    let name = parse::<syn::Ident>(input).unwrap();\n    \n    quote! {\n        struct #name {\n            field: i32,\n        }\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros"],
+      "since": "1.45.0"
+    },
+    {
+      "id": "compiler.macro.hygiene.2",
+      "label": "Macro Hygiene",
+      "category": ["Compiler"],
+      "summary": "Identifier scoping in macros.",
+      "details": "Automatic in procedural macros.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse quote::quote;\n\n#[proc_macro]\npub fn hygienic(_input: TokenStream) -> TokenStream {\n    quote! {\n        let x = 42;\n        println!(\"{}\", x);\n    }.into()\n}\n\n// Usage won't interfere with existing x"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#procedural-macro-hygiene"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.span.2",
+      "label": "Macro Spans",
+      "category": ["Compiler"],
+      "summary": "Source location tracking.",
+      "details": "Important for error reporting.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse quote::quote;\nuse syn::spanned::Spanned;\n\n#[proc_macro]\npub fn span_example(input: TokenStream) -> TokenStream {\n    let expr = syn::parse::<syn::Expr>(input).unwrap();\n    let span = expr.span();\n    \n    quote_spanned! {span=>\n        compile_error!(\"This expression is not allowed\");\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://docs.rs/syn/latest/syn/spanned/trait.Spanned.html"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.error.2",
+      "label": "Macro Error Reporting",
+      "category": ["Compiler"],
+      "summary": "Generating helpful errors.",
+      "details": "compile_error! and custom diagnostics.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse quote::quote;\n\n#[proc_macro]\npub fn check(input: TokenStream) -> TokenStream {\n    // Parse and validate...\n    quote! {\n        compile_error!(\"Invalid input\");\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/std/macro.compile_error.html"],
+      "since": "1.20.0"
+    },
+    {
+      "id": "compiler.macro.derive.helper.2",
+      "label": "Derive Helper Attributes",
+      "category": ["Compiler"],
+      "summary": "Attributes for derive macros.",
+      "details": "#[helper] attributes in derive macros.",
+      "examples": [
+        "#[derive(MyDerive)]\n#[my_helper(option)]\nstruct MyStruct;\n\n// In the proc macro:\nlet helper_attrs = input.attrs.iter().filter(|a| a.path.is_ident(\"my_helper\"));"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes"],
+      "since": "1.0.0"
+    },
+    {
+      "id": "compiler.macro.custom.derive.2",
+      "label": "Custom Derive Macros",
+      "category": ["Compiler"],
+      "summary": "Creating #[derive] macros.",
+      "details": "Generate trait implementations automatically.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, DeriveInput};\nuse quote::quote;\n\n#[proc_macro_derive(MyDerive)]\npub fn my_derive(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    \n    let expanded = quote! {\n        impl MyTrait for #name {\n            fn my_function(&self) {\n                println!(\"Hello from {:?}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(expanded)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/book/ch19-06-macros.html"],
+      "since": "1.15.0"
+    },
+    {
+      "id": "compiler.macro.attribute.2",
+      "label": "Attribute Macros",
+      "category": ["Compiler"],
+      "summary": "Creating #[attribute] macros.",
+      "details": "Modify annotated items.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::{parse_macro_input, ItemFn};\nuse quote::quote;\n\n#[proc_macro_attribute]\npub fn my_attribute(_attr: TokenStream, item: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(item as ItemFn);\n    let name = &input.sig.ident;\n    \n    let output = quote! {\n        #input\n        \n        impl #name {\n            fn helper(&self) {\n                println!(\"Helping {}\", stringify!(#name));\n            }\n        }\n    };\n    \n    TokenStream::from(output)\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros"],
+      "since": "1.30.0"
+    },
+    {
+      "id": "compiler.macro.function.2",
+      "label": "Function-like Macros",
+      "category": ["Compiler"],
+      "summary": "Creating macro!(...) syntax.",
+      "details": "More powerful than macro_rules!.",
+      "examples": [
+        "use proc_macro::TokenStream;\nuse syn::parse;\nuse quote::quote;\n\n#[proc_macro]\npub fn my_macro(input: TokenStream) -> TokenStream {\n    let name = parse::<syn::Ident>(input).unwrap();\n    \n    quote! {\n        struct #name {\n            field: i32,\n        }\n    }.into()\n}"
+      ],
+      "benchmarks": [],
+      "tags": ["compiler-internals"],
+      "reference": ["https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros"],
+      "since": "1.45.0"
+    }
+  ],
+  "edges": [
+    { "from": "lang.core", "to": "own.borrow", "relation": "part_of", "weight": 1.0, "evidence": "Language reference" },
+    { "from": "lang.core", "to": "life.times", "relation": "part_of", "weight": 1.0, "evidence": "Language reference" },
+    { "from": "trait.system", "to": "type.system", "relation": "uses", "weight": 0.9, "evidence": "Traits constrain types" },
+    { "from": "async.await", "to": "pin.concept", "relation": "requires", "weight": 0.8, "evidence": "Async often needs pinning" },
+    { "from": "async.await", "to": "tokio.crate", "relation": "composes", "weight": 0.7, "evidence": "Tokio is common runtime" },
+    { "from": "tokio.crate", "to": "logging.tracing", "relation": "composes", "weight": 0.6, "evidence": "Common pairing" },
+    { "from": "errors.result", "to": "crate.anyhow", "relation": "uses", "weight": 0.7, "evidence": "Common error handling" },
+    { "from": "errors.result", "to": "crate.thiserror", "relation": "uses", "weight": 0.7, "evidence": "Common error handling" },
+    { "from": "ffi.c", "to": "panic.strategy", "relation": "requires", "weight": 0.8, "evidence": "FFI must handle panics" },
+    { "from": "unsafe.rust", "to": "mem.model", "relation": "requires", "weight": 0.9, "evidence": "Unsafe depends on memory model" },
+    { "from": "tooling.clippy", "to": "antipattern.unwrap", "relation": "lints", "weight": 0.8, "evidence": "Clippy warns about unwrap" },
+    { "from": "lint.miri", "to": "unsafe.rust", "relation": "tests", "weight": 0.9, "evidence": "Miri checks unsafe" },
+    { "from": "pattern.ownership.split", "to": "own.borrow", "relation": "refines", "weight": 0.7, "evidence": "Splitting is borrowing technique" },
+    { "from": "pattern.newtype", "to": "type.system", "relation": "refines", "weight": 0.6, "evidence": "Newtypes use type system" },
+    { "from": "pattern.raii", "to": "smart.ptrs", "relation": "refines", "weight": 0.7, "evidence": "RAII uses smart pointers" },
+    { "from": "anti.await.hold.lock", "to": "async.await", "relation": "pitfall_of", "weight": 0.8, "evidence": "Common async mistake" },
+    { "from": "anti.clone_all", "to": "perf.profiling", "relation": "contradicts", "weight": 0.7, "evidence": "Cloning hurts performance" },
+    { "from": "pattern.zero_copy", "to": "string.str", "relation": "uses", "weight": 0.6, "evidence": "Zero-copy uses string slices" },
+    { "from": "pattern.arena", "to": "perf.profiling", "relation": "refines", "weight": 0.7, "evidence": "Arenas improve performance" },
+    { "from": "no_std.embedded", "to": "ffi.c", "relation": "uses", "weight": 0.6, "evidence": "Embedded often uses FFI" },
+    { "from": "wasm.target", "to": "serde.crate", "relation": "uses", "weight": 0.5, "evidence": "WASM often uses serde" },
+    { "from": "crate.axum", "to": "tokio.crate", "relation": "requires", "weight": 0.9, "evidence": "Axum needs Tokio" },
+    { "from": "crate.reqwest", "to": "tokio.crate", "relation": "composes", "weight": 0.7, "evidence": "Reqwest often used with Tokio" },
+    { "from": "release.msrv", "to": "build.cargo", "relation": "documents", "weight": 0.6, "evidence": "MSRV in Cargo.toml" },
+    { "from": "docs.book", "to": "lang.core", "relation": "documents", "weight": 0.9, "evidence": "Book explains core" },
+    { "from": "rfc.book", "to": "unsafe.rust", "relation": "documents", "weight": 0.9, "evidence": "Nomicon explains unsafe" },
+    { "from": "compiler.mir", "to": "compiler.llvm", "relation": "precedes", "weight": 0.9, "evidence": "MIR is input to LLVM" },
+    { "from": "compiler.borrow.ck", "to": "compiler.mir", "relation": "uses", "weight": 0.8, "evidence": "Borrowck uses MIR" },
+    { "from": "compiler.nll", "to": "compiler.borrow.ck", "relation": "enhances", "weight": 0.7, "evidence": "NLL improves borrowck" },
+    { "from": "compiler.trait.res", "to": "trait.system", "relation": "implements", "weight": 0.8, "evidence": "Trait resolution implements traits" },
+    { "from": "compiler.mono", "to": "type.system", "relation": "implements", "weight": 0.7, "evidence": "Monomorphization handles generics" },
+    { "from": "compiler.lto", "to": "perf.profiling", "relation": "optimizes", "weight": 0.8, "evidence": "LTO improves performance" },
+    { "from": "compiler.inline", "to": "perf.profiling", "relation": "optimizes", "weight": 0.7, "evidence": "Inlining improves performance" },
+    { "from": "compiler.const.prop", "to": "const.eval", "relation": "implements", "weight": 0.8, "evidence": "Const propagation implements const eval" },
+    { "from": "compiler.dead.code", "to": "compiler.lto", "relation": "complements", "weight": 0.6, "evidence": "DCE works with LTO" },
+    { "from": "compiler.pgo", "to": "perf.profiling", "relation": "optimizes", "weight": 0.8, "evidence": "PGO improves performance" },
+    { "from": "compiler.opt.pass", "to": "perf.profiling", "relation": "optimizes", "weight": 0.9, "evidence": "Optimization passes improve perf" },
+    { "from": "compiler.panic.abort", "to": "panic.strategy", "relation": "implements", "weight": 0.8, "evidence": "panic=abort is a strategy" },
+    { "from": "compiler.target.features", "to": "simd.portable", "relation": "enables", "weight": 0.7, "evidence": "Target features enable SIMD" },
+    { "from": "compiler.thin.lto", "to": "compiler.lto", "relation": "variant_of", "weight": 0.8, "evidence": "ThinLTO is LTO variant" },
+    { "from": "compiler.macro.exp", "to": "proc.macros", "relation": "implements", "weight": 0.9, "evidence": "Macro expansion implements proc macros" },
+    { "from": "compiler.macro.derive", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.7, "evidence": "Derive macros are proc macros" },
+    { "from": "compiler.macro.attr", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.7, "evidence": "Attr macros are proc macros" },
+    { "from": "compiler.macro.fn", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.7, "evidence": "Fn-like macros are proc macros" },
+    { "from": "compiler.macro.rules", "to": "macro.rules", "relation": "implements", "weight": 0.9, "evidence": "Compiler implements macro_rules!" },
+    { "from": "compiler.macro.hygiene", "to": "compiler.macro.exp", "relation": "aspect_of", "weight": 0.6, "evidence": "Hygiene is part of expansion" },
+    { "from": "compiler.macro.span", "to": "compiler.macro.error", "relation": "enables", "weight": 0.7, "evidence": "Spans enable good errors" },
+    { "from": "compiler.cfg.attrs", "to": "build.cargo", "relation": "integrates_with", "weight": 0.6, "evidence": "Cfg integrates with Cargo features" },
+    { "from": "compiler.test.harness", "to": "testing.std", "relation": "implements", "weight": 0.8, "evidence": "Test harness implements testing" },
+    { "from": "compiler.benchmark.tests", "to": "perf.profiling", "relation": "measures", "weight": 0.7, "evidence": "Benchmarks measure perf" },
+    { "from": "compiler.plugins", "to": "compiler.macro.exp", "relation": "alternative_to", "weight": 0.5, "evidence": "Plugins alternative to proc macros" },
+    { "from": "compiler.proc.macro", "to": "proc.macros", "relation": "implements", "weight": 0.9, "evidence": "Compiler implements proc macros" },
+    { "from": "compiler.derive.macros", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.8, "evidence": "Derive macros are proc macros" },
+    { "from": "compiler.attr.macros", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.8, "evidence": "Attr macros are proc macros" },
+    { "from": "compiler.function.macros", "to": "compiler.proc.macro", "relation": "specializes", "weight": 0.8, "evidence": "Fn-like macros are proc macros" },
+    { "from": "compiler.macro.hygiene.2", "to": "compiler.proc.macro", "relation": "aspect_of", "weight": 0.7, "evidence": "Hygiene is part of proc macros" },
+    { "from": "compiler.macro.span.2", "to": "compiler.proc.macro", "relation": "aspect_of", "weight": 0.6, "evidence": "Spans are part of proc macros" },
+    { "from": "compiler.macro.error.2", "to": "compiler.proc.macro", "relation": "aspect_of", "weight": 0.6, "evidence": "Error reporting is part of proc macros" },
+    { "from": "compiler.macro.derive.helper.2", "to": "compiler.derive.macros", "relation": "aspect_of", "weight": 0.5, "evidence": "Helper attrs part of derive" },
+    { "from": "compiler.macro.custom.derive.2", "to": "compiler.derive.macros", "relation": "implements", "weight": 0.9, "evidence": "Custom derive implements derive" },
+    { "from": "compiler.macro.attribute.2", "to": "compiler.attr.macros", "relation": "implements", "weight": 0.9, "evidence": "Custom attr implements attr macros" },
+    { "from": "compiler.macro.function.2", "to": "compiler.function.macros", "relation": "implements", "weight": 0.9, "evidence": "Custom fn-like implements fn macros" }
+  ],
+  "recipes": [
+    {
+      "id": "rec.web.api.axum",
+      "goal": "Build an async JSON API with axum + serde + tracing",
+      "requires": ["crate.axum", "serde.crate", "logging.tracing", "tokio.crate"],
+      "steps": [
+        "Define models with #[derive(Serialize, Deserialize)].",
+        "Create axum routes with extractors (Json<T>, Path, State).",
+        "Instrument handlers via tracing.",
+        "Run with #[tokio::main] multi-threaded runtime."
+      ],
+      "snippet": "use axum::{routing::get, Json, Router};\nuse serde::{Serialize, Deserialize};\nuse tracing::info;\n\n#[derive(Serialize, Deserialize)]\nstruct HealthCheck {\n    status: String,\n    version: String,\n}\n\n#[tokio::main]\nasync fn main() {\n    // Initialize tracing\n    tracing_subscriber::fmt().init();\n    \n    let app = Router::new()\n        .route(\"/health\", get(|| async {\n            info!(\"Health check requested\");\n            Json(HealthCheck {\n                status: \"ok\".to_string(),\n                version: env!(\"CARGO_PKG_VERSION\").to_string(),\n            })\n        }));\n    \n    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 3000));\n    info!(\"Server listening on {}\", addr);\n    axum::Server::bind(&addr)\n        .serve(app.into_make_service())\n        .await\n        .unwrap();\n}"
+    },
+    {
+      "id": "rec.error.ergonomic",
+      "goal": "Ergonomic app errors",
+      "requires": ["crate.anyhow", "crate.thiserror", "errors.result"],
+      "steps": [
+        "Use thiserror in library for precise enums.",
+        "In binaries, use anyhow::Result for top-level.",
+        "Add context() everywhere crossing boundaries."
+      ],
+      "snippet": "use thiserror::Error;\nuse anyhow::{Context, Result};\n\n// Library error type\n#[derive(Error, Debug)]\npub enum LibError {\n    #[error(\"I/O error\")]\n    Io(#[from] std::io::Error),\n    #[error(\"Invalid data format\")]\n    Format,\n}\n\n// Library function\npub fn lib_function(path: &str) -> Result<(), LibError> {\n    let data = std::fs::read_to_string(path)?;\n    if data.is_empty() {\n        return Err(LibError::Format);\n    }\n    Ok(())\n}\n\n// Application usage\nfn main() -> Result<()> {\n    lib_function(\"data.txt\").context(\"Failed in library call\")?;\n    \n    // Anyhow for ad-hoc errors\n    let config = std::fs::read_to_string(\"config.toml\")\n        .context(\"Failed to read config file\")?;\n    \n    Ok(())\n}"
+    },
+    {
+      "id": "rec.ffi.c",
+      "goal": "Call C safely",
+      "requires": ["ffi.c", "panic.strategy", "unsafe.rust"],
+      "steps": [
+        "Design C-facing repr(C) types.",
+        "Catch panics at boundary; never unwind into C.",
+        "Document unsafe invariants and test with Miri."
+      ],
+      "snippet": "use std::os::raw::c_int;\nuse std::panic;\n\n#[repr(C)]\npub struct Point {\n    x: c_int,\n    y: c_int,\n}\n\nextern \"C\" {\n    fn sqrt(x: f64) -> f64;\n}\n\n#[no_mangle]\npub extern \"C\" fn distance(p1: &Point, p2: &Point) -> f64 {\n    // Catch any panics at FFI boundary\n    let result = panic::catch_unwind(|| {\n        let dx = (p2.x - p1.x) as f64;\n        let dy = (p2.y - p1.y) as f64;\n        unsafe { sqrt(dx*dx + dy*dy) }\n    });\n    \n    match result {\n        Ok(val) => val,\n        Err(_) => -1.0, // Return error sentinel\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn test_distance() {\n        let p1 = Point { x: 0, y: 0 };\n        let p2 = Point { x: 3, y: 4 };\n        assert_eq!(distance(&p1, &p2), 5.0);\n    }\n}"
+    },
+    {
+      "id": "rec.perf.optimize",
+      "goal": "Optimize Rust code for performance",
+      "requires": ["perf.profiling", "compiler.lto", "compiler.inline", "compiler.pgo"],
+      "steps": [
+        "Profile with criterion or perf to identify hotspots",
+        "Apply targeted optimizations (SIMD, arenas, etc.)",
+        "Configure compiler optimizations (LTO, PGO, etc.)",
+        "Benchmark changes to verify improvements"
+      ],
+      "snippet": "// Cargo.toml\n[profile.release]\nlto = true\ncodegen-units = 1\n\n// Build with PGO:\n// 1. RUSTFLAGS=\"-C profile-generate=/tmp/pgo-data\" cargo build --release\n// 2. ./target/release/myapp --training-workload\n// 3. llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data\n// 4. RUSTFLAGS=\"-C profile-use=/tmp/pgo-data/merged.profdata\" cargo build --release\n\n// SIMD example (nightly)\n#![feature(portable_simd)]\nuse std::simd::f32x4;\n\nfn simd_add(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {\n    let a_simd = f32x4::from_array(a);\n    let b_simd = f32x4::from_array(b);\n    (a_simd + b_simd).to_array()\n}"
+    },
+    {
+      "id": "rec.unsafe.audit",
+      "goal": "Audit and document unsafe code",
+      "requires": ["unsafe.rust", "lint.miri", "security.unsafe.audit"],
+      "steps": [
+        "Document all invariants for each unsafe block",
+        "Add tests that verify the invariants",
+        "Run Miri to detect undefined behavior",
+        "Consider safe abstractions to minimize unsafe surface"
+      ],
+      "snippet": "/// SAFETY: This function requires:\n/// 1. The pointer must be non-null and properly aligned\n/// 2. The memory must be initialized\n/// 3. The caller must ensure exclusive access during mutation\nunsafe fn unsafe_operation(ptr: *mut u8, len: usize) {\n    // ... implementation ...\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn test_unsafe_operation() {\n        let mut data = vec![0u8; 10];\n        unsafe {\n            unsafe_operation(data.as_mut_ptr(), data.len());\n        }\n        // Verify invariants\n    }\n    \n    // Run with: cargo miri test\n}"
+    }
+  ],
+  "queries": [
+    {
+      "id": "q.find-pitfalls",
+      "prompt": "List antipatterns related to async and ownership.",
+      "returns": ["anti.await.hold.lock", "anti.clone_all", "antipattern.shared_mut"]
+    },
+    {
+      "id": "q.get-runtime-ecosystem",
+      "prompt": "Which nodes compose an HTTP server stack?",
+      "returns": ["crate.axum", "tokio.crate", "serde.crate", "logging.tracing", "crate.reqwest"]
+    },
+    {
+      "id": "q.compiler-optimizations",
+      "prompt": "What compiler features improve performance?",
+      "returns": ["compiler.lto", "compiler.inline", "compiler.pgo", "compiler.opt.pass", "compiler.target.features"]
+    },
+    {
+      "id": "q.macro-types",
+      "prompt": "What types of macros does Rust support?",
+      "returns": ["macro.rules", "compiler.derive.macros", "compiler.attr.macros", "compiler.function.macros"]
+    }
+  ],
+  "checklists": {
+    "unsafe_block_review": [
+      "Document invariants near unsafe block",
+      "Link to tests/Miri runs",
+      "Consider higher-level safe abstraction",
+      "Minimize unsafe surface; prefer local scopes"
+    ],
+    "async_handler_review": [
+      "Avoid holding locks across .await",
+      "Propagate cancellations/timeouts",
+      "Use bounded channels for backpressure",
+      "Instrument spans for observability"
+    ],
+    "perf_review": [
+      "Enable LTO/ThinLTO where appropriate",
+      "Measure with criterion; avoid premature optimization",
+      "Watch allocations and clones; consider SmallVec/arena",
+      "Prefer BTreeMap for deterministic iteration order"
+    ],
+    "macro_implementation": [
+      "Document macro purpose and syntax",
+      "Ensure proper hygiene",
+      "Include span information for good errors",
+      "Add comprehensive tests",
+      "Benchmark if macro is performance-critical"
+    ],
+    "compiler_optimization": [
+      "Set appropriate opt-level (2 or 3 for release)",
+      "Consider LTO for release builds",
+      "Use target-cpu=native or specific features",
+      "Profile with PGO for critical code",
+      "Balance codegen-units between compile time and optimization"
+    ]
+  }
+}
