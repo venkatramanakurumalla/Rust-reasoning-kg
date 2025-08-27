@@ -1,0 +1,498 @@
+###############################################################################
+# Comprehensive Rust — Complete Code Index (plain text)
+# Each snippet is preceded by: -- Section X.Y --
+###############################################################################
+
+-- 4.3 Hello World --
+fn main() {
+    println!("Hello, world!");
+}
+
+-- 5.2 Variables --
+let x: i32 = 10;
+let mut y = 20;
+
+-- 5.5 Type Inference --
+let z = 3.14;           // inferred f64
+let n = 42;             // inferred i32
+
+-- 5.6.1 Fibonacci --
+fn fib(n: u32) -> u32 {
+    if n < 2 {
+        n
+    } else {
+        fib(n - 1) + fib(n - 2)
+    }
+}
+
+-- 6.2 if Expression --
+let size = if x < 20 { "small" } else { "large" };
+
+-- 6.3 match --
+match val {
+    1 => println!("one"),
+    _ => println!("other"),
+}
+
+-- 6.4.1 for loop --
+for elem in [2, 3, 5] {
+    dbg!(elem);
+}
+
+-- 6.5 loop with break --
+let mut i = 0;
+let result = loop {
+    i += 1;
+    if i > 5 { break i; }
+};
+
+-- 6.8.1 Collatz length --
+fn collatz_length(mut n: i32) -> u32 {
+    let mut len = 1;
+    while n > 1 {
+        n = if n % 2 == 0 { n / 2 } else { 3 * n + 1 };
+        len += 1;
+    }
+    len
+}
+
+-- 8.1 Arrays --
+let mut a: [i8; 5] = [5, 4, 3, 2, 1];
+a[2] = 0;
+
+-- 8.2 Tuples --
+let t: (i8, bool) = (7, true);
+dbg!(t.0);
+
+-- 8.5.1 Transpose 3×3 --
+fn transpose(matrix: [[i32; 3]; 3]) -> [[i32; 3]; 3] {
+    let mut result = [[0; 3]; 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            result[j][i] = matrix[i][j];
+        }
+    }
+    result
+}
+
+-- 9.1 Shared Reference --
+let r: &i32 = &x;
+
+-- 9.2 Mutable Reference --
+let mr: &mut i32 = &mut x;
+*mr += 1;
+
+-- 9.4 String vs &str --
+let s1: &str = "world";
+let mut s2: String = String::from("hello ");
+s2.push_str(s1);
+
+-- 9.6.1 Geometry helpers --
+fn magnitude(vector: &[f64; 3]) -> f64 {
+    vector.iter().map(|&c| c * c).sum::<f64>().sqrt()
+}
+
+fn normalize(vector: &mut [f64; 3]) {
+    let mag = magnitude(vector);
+    for item in vector {
+        *item /= mag;
+    }
+}
+
+-- 10.1 Struct --
+struct Person {
+    name: String,
+    age: u8,
+}
+let alice = Person {
+    name: String::from("Alice"),
+    age: 30,
+};
+
+-- 10.2 Tuple Struct --
+struct Meters(f64);
+let height = Meters(1.73);
+
+-- 10.3 Enum --
+enum Direction {
+    Left,
+    Right,
+}
+
+-- 12.1 Destructuring Tuple --
+let (a, _, c) = tuple;
+
+-- 12.2 match with guards --
+match c {
+    '0'..='9' => println!("digit"),
+    ch if ch.is_lowercase() => println!("lower"),
+    _ => println!("other"),
+}
+
+-- 12.5.1 if let --
+if let Some(v) = maybe {
+    use(v);
+}
+
+-- 12.5.2 while let --
+while let Some(c) = iter.next() {
+    println!("{c}");
+}
+
+-- 13.1 Method Example --
+impl CarRace {
+    fn add_lap(&mut self, lap: i32) {
+        self.laps.push(lap);
+    }
+}
+
+-- 13.2 Trait Definition --
+trait Pet {
+    fn talk(&self) -> String;
+}
+
+-- 13.4.1 VerbosityFilter Logger impl --
+impl Logger for VerbosityFilter {
+    fn log(&self, verbosity: u8, message: &str) {
+        if verbosity <= self.max_verbosity {
+            self.inner.log(verbosity, message);
+        }
+    }
+}
+
+-- 14.1 Generic pick --
+fn pick<T>(cond: bool, left: T, right: T) -> T {
+    if cond { left } else { right }
+}
+
+-- 14.2 Trait bound --
+fn duplicate<T: Clone>(a: T) -> (T, T) {
+    (a.clone(), a.clone())
+}
+
+-- 14.7.1 Generic min --
+fn min<T: Ord>(a: T, b: T) -> T {
+    if a <= b { a } else { b }
+}
+
+-- 16.3 Option usage --
+let pos: Option<usize> = text.find('z');
+
+-- 16.5 String builder --
+let mut s = String::with_capacity(100);
+s.push_str("hello");
+s.push('!');
+
+-- 16.6 Vec retain / dedup --
+let mut v = vec![0, 0, 1, 2, 3, 4];
+v.retain(|&x| x % 2 == 0);
+v.dedup();
+
+-- 17.1 Simple closure --
+let double = |x| x * 2;
+
+-- 17.2 Capturing closure --
+let max = 5;
+let clamp = |v| if v > max { max } else { v };
+
+-- 17.4.1 Logger filter closure --
+let logger = Filter::new(stderr, |_, msg| msg.contains("yikes"));
+
+-- 18.2 Add trait for Point --
+impl std::ops::Add for Point {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+-- 18.3 From / Into --
+let s: String = "hello".into();
+let addr: Ipv4Addr = [127, 0, 0, 1].into();
+
+-- 18.7.1 ROT13 Read adapter --
+impl<R: Read> Read for RotDecoder<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let size = self.input.read(buf)?;
+        for b in &mut buf[..size] {
+            if b.is_ascii_alphabetic() {
+                let base = if b.is_ascii_uppercase() { b'A' } else { b'a' };
+                *b = (*b - base + self.rot) % 26 + base;
+            }
+        }
+        Ok(size)
+    }
+}
+
+-- 20.4 Move semantics demo --
+let s1 = String::from("hello");
+let s2 = s1;   // s1 moved; no longer usable
+
+-- 20.5 Clone --
+say_hello(name.clone());
+
+-- 20.6 Copy type --
+#[derive(Copy, Clone)]
+struct Point(i32, i32);
+
+-- 20.7 Drop --
+struct Droppable(&'static str);
+impl Drop for Droppable {
+    fn drop(&mut self) {
+        println!("Dropping {}", self.0);
+    }
+}
+
+-- 20.8.1 Package Builder --
+PackageBuilder::new("serde")
+    .version("1.0")
+    .authors(vec!["somebody".into()])
+    .build()
+
+-- 21.1 Box --
+let five = Box::new(5);
+
+-- 21.2 Rc --
+use std::rc::Rc;
+let a = Rc::new(10);
+let b = Rc::clone(&a);
+
+-- 21.4.1 Binary Tree insert & has --
+impl<T: Ord> Subtree<T> {
+    fn insert(&mut self, value: T) {
+        match &mut self.0 {
+            None => self.0 = Some(Box::new(Node::new(value))),
+            Some(node) => match value.cmp(&node.value) {
+                Ordering::Less => node.left.insert(value),
+                Ordering::Greater => node.right.insert(value),
+                Ordering::Equal => {}
+            },
+        }
+    }
+
+    fn has(&self, value: &T) -> bool {
+        match &self.0 {
+            None => false,
+            Some(node) => match value.cmp(&node.value) {
+                Ordering::Less => node.left.has(value),
+                Ordering::Greater => node.right.has(value),
+                Ordering::Equal => true,
+            },
+        }
+    }
+}
+
+-- 23.5.1 Health Statistics visit_doctor --
+pub fn visit_doctor(&mut self, m: Measurements) -> HealthReport {
+    self.visit_count += 1;
+    let bp = m.blood_pressure;
+    let report = HealthReport {
+        patient_name: &self.name,
+        visit_count: self.visit_count,
+        height_change: m.height - self.height,
+        blood_pressure_change: match self.last_blood_pressure {
+            Some(lbp) => Some((
+                bp.0 as i32 - lbp.0 as i32,
+                bp.1 as i32 - lbp.1 as i32,
+            )),
+            None => None,
+        },
+    };
+    self.height = m.height;
+    self.last_blood_pressure = Some(bp);
+    report
+}
+
+-- 24.1 Lifetime annotation --
+fn left_most<'a>(p1: &'a Point, p2: &'a Point) -> &'a Point {
+    if p1.0 < p2.0 { p1 } else { p2 }
+}
+
+-- 24.4.1 Protobuf parser --
+fn parse_field(data: &[u8]) -> (Field, &[u8]) {
+    let (tag, remainder) = parse_varint(data);
+    let (field_num, wire_type) = unpack_tag(tag);
+    let (value, remainder) = match wire_type {
+        WireType::Varint => {
+            let (v, rem) = parse_varint(remainder);
+            (FieldValue::Varint(v), rem)
+        }
+        WireType::Len => {
+            let (len, rem) = parse_varint(remainder);
+            let len = len as usize;
+            let (bytes, rem) = rem.split_at(len);
+            (FieldValue::Len(bytes), rem)
+        }
+    };
+    (Field { field_num, value }, remainder)
+}
+
+-- 26.6.1 offset_differences iterator --
+fn offset_differences(offset: usize, values: Vec<i32>) -> Vec<i32> {
+    values
+        .iter()
+        .zip(values.iter().cycle().skip(offset))
+        .map(|(a, b)| *b - *a)
+        .collect()
+}
+
+-- 27.6.1 GUI module layout --
+// src/widgets.rs
+pub use button::Button;
+pub use label::Label;
+pub use window::Window;
+
+mod button;
+mod label;
+mod window;
+
+-- 28.4.1 Luhn algorithm --
+pub fn luhn(cc_number: &str) -> bool {
+    let mut sum = 0;
+    let mut double = false;
+    let mut digits = 0;
+    for c in cc_number.chars().rev() {
+        if let Some(d) = c.to_digit(10) {
+            digits += 1;
+            let d = if double {
+                let d = d * 2;
+                if d > 9 { d - 9 } else { d }
+            } else { d };
+            sum += d;
+            double = !double;
+        } else if !c.is_whitespace() {
+            return false;
+        }
+    }
+    digits >= 2 && sum % 10 == 0
+}
+
+-- 30.8.1 Expression evaluator with Result --
+fn eval(e: Expression) -> Result<i64, DivideByZeroError> {
+    match e {
+        Expression::Value(v) => Ok(v),
+        Expression::Op { op, left, right } => {
+            let left = eval(*left)?;
+            let right = eval(*right)?;
+            Ok(match op {
+                Operation::Add => left + right,
+                Operation::Sub => left - right,
+                Operation::Mul => left * right,
+                Operation::Div => {
+                    if right == 0 { return Err(DivideByZeroError); }
+                    left / right
+                }
+            })
+        }
+    }
+}
+
+-- 31.2 Raw pointer deref --
+let mut x = 10;
+let p = &raw mut x;
+unsafe { *p = 20; }
+
+-- 31.3 Mutable static --
+static mut COUNTER: u32 = 0;
+unsafe { COUNTER += 1; }
+
+-- 31.5.1 Unsafe swap --
+unsafe fn swap(a: *mut u8, b: *mut u8) {
+    let tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+-- 31.7.1 DirectoryIterator FFI wrapper --
+impl DirectoryIterator {
+    fn new(path: &str) -> Result<Self, String> {
+        let path = CString::new(path).map_err(|e| e.to_string())?;
+        let dir = unsafe { ffi::opendir(path.as_ptr()) };
+        if dir.is_null() {
+            Err(format!("Could not open {:?}", path))
+        } else {
+            Ok(DirectoryIterator { path, dir })
+        }
+    }
+}
+
+impl Iterator for DirectoryIterator {
+    type Item = OsString;
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            let dirent = ffi::readdir(self.dir);
+            if dirent.is_null() { return None; }
+            let name = CStr::from_ptr((*dirent).d_name.as_ptr());
+            Some(OsStr::from_bytes(name.to_bytes()).to_owned())
+        }
+    }
+}
+
+-- 34.1 Android Soong binary --
+rust_binary {
+    name: "hello_rust",
+    crate_name: "hello_rust",
+    srcs: ["src/main.rs"],
+}
+
+-- 34.2 Android library + deps --
+rust_library {
+    name: "libgreetings",
+    crate_name: "greetings",
+    srcs: ["src/lib.rs"],
+}
+
+rust_binary {
+    name: "hello_rust_with_dep",
+    crate_name: "hello_rust_with_dep",
+    srcs: ["src/main.rs"],
+    rustlibs: ["libgreetings"],
+}
+
+-- 35.1.3 AIDL service impl --
+impl IBirthdayService for BirthdayService {
+    fn wishHappyBirthday(&self, name: &str, years: i32) -> binder::Result<String> {
+        Ok(format!("Happy Birthday {name}, congratulations with the {years} years!"))
+    }
+}
+
+-- 38.1.2 Bindgen usage --
+let name = CString::new("Peter").unwrap();
+let card = birthday_bindgen::card {
+    name: name.as_ptr(),
+    years: 42,
+};
+unsafe { birthday_bindgen::print_card(&card); }
+
+-- 38.1.4 Export Rust to C --
+#[unsafe(no_mangle)]
+pub extern "C" fn analyze_numbers(x: i32, y: i32) {
+    if x < y {
+        println!("x ({x}) is smallest!");
+    } else {
+        println!("y ({y}) is probably larger");
+    }
+}
+
+-- 45 Example CXX bridge --
+#[cxx::bridge]
+mod ffi {
+    extern "Rust" {
+        type MultiBuf;
+        fn next_chunk(buf: &mut MultiBuf) -> &[u8];
+    }
+
+    unsafe extern "C++" {
+        include!("example/include/blobstore.h");
+        type BlobstoreClient;
+        fn new_blobstore_client() -> UniquePtr<BlobstoreClient>;
+        fn put(self: Pin<&mut BlobstoreClient>, parts: &mut MultiBuf) -> Result<u64>;
+    }
+}
+
+###############################################################################
+# End of complete code index — everything copy-paste ready
+###############################################################################
