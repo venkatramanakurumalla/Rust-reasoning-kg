@@ -1,0 +1,690 @@
+{
+  "rust_knowledge_graph": {
+    "metadata": {
+      "version": "1.0",
+      "description": "Comprehensive production-level Rust knowledge graph",
+      "last_updated": "2025-01-01",
+      "coverage": "Complete language features, ecosystem, and production practices"
+    },
+    "core_language": {
+      "ownership_system": {
+        "ownership": {
+          "description": "Core memory safety concept",
+          "concepts": ["move_semantics", "borrowing", "lifetimes"],
+          "rules": [
+            "Each value has exactly one owner",
+            "When owner goes out of scope, value is dropped",
+            "Ownership can be transferred (moved)"
+          ],
+          "examples": ["Box<T>", "Vec<T>", "String"]
+        },
+        "borrowing": {
+          "description": "References without taking ownership",
+          "types": {
+            "immutable_references": {
+              "syntax": "&T",
+              "rules": ["Multiple immutable refs allowed", "No mutation through immutable ref"],
+              "use_cases": ["function_parameters", "iteration", "sharing_data"]
+            },
+            "mutable_references": {
+              "syntax": "&mut T",
+              "rules": ["Only one mutable ref at a time", "No other refs while mutable exists"],
+              "use_cases": ["in_place_modification", "builder_patterns"]
+            }
+          }
+        },
+        "lifetimes": {
+          "description": "Ensures references are valid",
+          "syntax": "'a, 'static",
+          "concepts": ["lifetime_parameters", "lifetime_elision", "higher_ranked_trait_bounds"],
+          "advanced": ["lifetime_subtyping", "variance", "higher_kinded_types"]
+        }
+      },
+      "type_system": {
+        "primitive_types": {
+          "integers": ["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize"],
+          "floating_point": ["f32", "f64"],
+          "boolean": "bool",
+          "character": "char",
+          "unit": "()"
+        },
+        "compound_types": {
+          "tuples": {
+            "syntax": "(T1, T2, ...)",
+            "access": "tuple.0, tuple.1",
+            "destructuring": "let (a, b) = tuple"
+          },
+          "arrays": {
+            "syntax": "[T; N]",
+            "stack_allocated": true,
+            "fixed_size": true
+          },
+          "slices": {
+            "syntax": "&[T]",
+            "dynamic_size": true,
+            "borrowed_view": true
+          }
+        },
+        "user_defined_types": {
+          "structs": {
+            "classic": {
+              "syntax": "struct Name { field: Type }",
+              "instantiation": "Name { field: value }"
+            },
+            "tuple_structs": {
+              "syntax": "struct Name(Type1, Type2)",
+              "access": "instance.0"
+            },
+            "unit_structs": {
+              "syntax": "struct Name;",
+              "use_cases": ["markers", "zero_sized_types"]
+            }
+          },
+          "enums": {
+            "description": "Algebraic data types",
+            "variants": {
+              "unit_variants": "Variant",
+              "tuple_variants": "Variant(Type)",
+              "struct_variants": "Variant { field: Type }"
+            },
+            "pattern_matching": "match expression"
+          },
+          "unions": {
+            "description": "Unsafe tagged unions",
+            "use_cases": ["FFI", "low_level_optimizations"],
+            "safety": "unsafe to access"
+          }
+        },
+        "generics": {
+          "type_parameters": "<T>",
+          "lifetime_parameters": "<'a>",
+          "const_parameters": "<const N: usize>",
+          "bounds": {
+            "trait_bounds": "T: Trait",
+            "lifetime_bounds": "T: 'a",
+            "multiple_bounds": "T: Trait1 + Trait2"
+          },
+          "associated_types": {
+            "syntax": "type Item;",
+            "projection": "Iterator::Item"
+          }
+        }
+      },
+      "traits": {
+        "definition": {
+          "syntax": "trait TraitName { ... }",
+          "methods": ["required_methods", "default_implementations"],
+          "associated_types": "type AssocType;",
+          "associated_constants": "const CONST: Type;"
+        },
+        "implementation": {
+          "inherent": "impl Type { ... }",
+          "trait_impl": "impl Trait for Type { ... }",
+          "generic_impl": "impl<T> Trait for Type<T> where T: Bound { ... }"
+        },
+        "standard_traits": {
+          "core_traits": {
+            "Copy": "Bitwise copyable types",
+            "Clone": "Explicit cloning",
+            "Drop": "Custom cleanup logic",
+            "Default": "Default value creation"
+          },
+          "comparison_traits": {
+            "PartialEq": "Partial equality",
+            "Eq": "Full equality",
+            "PartialOrd": "Partial ordering",
+            "Ord": "Total ordering"
+          },
+          "conversion_traits": {
+            "From": "Infallible conversion",
+            "Into": "Reciprocal of From",
+            "TryFrom": "Fallible conversion",
+            "TryInto": "Reciprocal of TryFrom",
+            "AsRef": "Cheap reference conversion",
+            "AsMut": "Cheap mutable reference conversion"
+          },
+          "iteration_traits": {
+            "Iterator": "Core iteration trait",
+            "IntoIterator": "Types that can be iterated",
+            "FromIterator": "Create from iterator",
+            "Extend": "Extend with iterator"
+          },
+          "operator_traits": {
+            "Add": "Addition operator +",
+            "Sub": "Subtraction operator -",
+            "Mul": "Multiplication operator *",
+            "Div": "Division operator /",
+            "Rem": "Remainder operator %",
+            "Index": "Indexing operator []",
+            "Deref": "Dereference operator *",
+            "DerefMut": "Mutable dereference"
+          },
+          "formatting_traits": {
+            "Debug": "Debug formatting {:?}",
+            "Display": "User-facing formatting {}",
+            "Binary": "Binary formatting {:b}",
+            "Octal": "Octal formatting {:o}",
+            "Hex": "Hex formatting {:x}"
+          }
+        },
+        "advanced_concepts": {
+          "trait_objects": {
+            "syntax": "dyn Trait",
+            "dynamic_dispatch": true,
+            "object_safety": "trait must be object safe"
+          },
+          "higher_ranked_trait_bounds": {
+            "syntax": "for<'a> F: Fn(&'a str) -> &'a str",
+            "use_cases": ["closures_with_lifetimes"]
+          },
+          "associated_type_constructors": {
+            "description": "Generic associated types",
+            "syntax": "type Iter<'a>: Iterator<Item = &'a T>;"
+          }
+        }
+      }
+    },
+    "memory_management": {
+      "stack_allocation": {
+        "description": "Automatic memory management",
+        "characteristics": ["fast", "deterministic", "limited_size"],
+        "use_cases": ["local_variables", "function_parameters"]
+      },
+      "heap_allocation": {
+        "smart_pointers": {
+          "Box<T>": {
+            "description": "Owned heap allocation",
+            "use_cases": ["recursive_types", "large_data", "trait_objects"]
+          },
+          "Rc<T>": {
+            "description": "Reference counted single-threaded",
+            "use_cases": ["shared_ownership", "graphs", "caches"]
+          },
+          "Arc<T>": {
+            "description": "Atomic reference counted multi-threaded",
+            "use_cases": ["shared_data_across_threads"]
+          },
+          "RefCell<T>": {
+            "description": "Interior mutability single-threaded",
+            "runtime_borrow_checking": true
+          },
+          "Mutex<T>": {
+            "description": "Mutual exclusion for thread safety",
+            "blocking": true
+          },
+          "RwLock<T>": {
+            "description": "Reader-writer lock",
+            "multiple_readers": true,
+            "exclusive_writer": true
+          }
+        },
+        "collections": {
+          "Vec<T>": "Dynamic array",
+          "VecDeque<T>": "Double-ended queue",
+          "HashMap<K, V>": "Hash table",
+          "BTreeMap<K, V>": "Ordered map",
+          "HashSet<T>": "Hash set",
+          "BTreeSet<T>": "Ordered set",
+          "LinkedList<T>": "Doubly-linked list"
+        }
+      },
+      "memory_safety": {
+        "compile_time_checks": [
+          "ownership_verification",
+          "borrow_checking",
+          "lifetime_validation"
+        ],
+        "runtime_protections": [
+          "bounds_checking",
+          "integer_overflow_detection"
+        ],
+        "unsafe_code": {
+          "description": "Opt-out of safety guarantees",
+          "operations": [
+            "dereferencing_raw_pointers",
+            "calling_unsafe_functions",
+            "implementing_unsafe_traits",
+            "accessing_mutable_statics",
+            "accessing_union_fields"
+          ],
+          "best_practices": [
+            "minimize_unsafe_blocks",
+            "document_safety_invariants",
+            "provide_safe_abstractions"
+          ]
+        }
+      }
+    },
+    "control_flow": {
+      "conditional_statements": {
+        "if_expressions": {
+          "syntax": "if condition { ... } else { ... }",
+          "expression_nature": "returns value"
+        },
+        "match_expressions": {
+          "description": "Pattern matching",
+          "exhaustiveness": "must cover all cases",
+          "guard_clauses": "if condition",
+          "patterns": [
+            "literal_patterns",
+            "variable_patterns",
+            "wildcard_pattern",
+            "range_patterns",
+            "struct_patterns",
+            "enum_patterns",
+            "reference_patterns"
+          ]
+        }
+      },
+      "loops": {
+        "loop": {
+          "description": "Infinite loop",
+          "break_with_value": "break value"
+        },
+        "while": {
+          "description": "Conditional loop",
+          "while_let": "pattern matching in condition"
+        },
+        "for": {
+          "description": "Iterator-based loop",
+          "syntax": "for item in iterator"
+        }
+      },
+      "functions": {
+        "definition": {
+          "syntax": "fn name(params) -> ReturnType { ... }",
+          "parameters": "name: Type",
+          "return_type": "-> Type"
+        },
+        "closures": {
+          "syntax": "|params| { ... }",
+          "capture_modes": ["by_reference", "by_mutable_reference", "by_value"],
+          "traits": ["Fn", "FnMut", "FnOnce"],
+          "move_closures": "move |params| { ... }"
+        },
+        "function_pointers": {
+          "syntax": "fn(Type) -> ReturnType",
+          "zero_cost": true
+        }
+      }
+    },
+    "error_handling": {
+      "result_type": {
+        "definition": "enum Result<T, E> { Ok(T), Err(E) }",
+        "methods": ["unwrap", "expect", "unwrap_or", "unwrap_or_else", "map", "map_err", "and_then", "or_else"],
+        "question_mark_operator": "? for early return"
+      },
+      "option_type": {
+        "definition": "enum Option<T> { Some(T), None }",
+        "null_safety": "no null pointer dereferences",
+        "methods": ["unwrap", "expect", "unwrap_or", "map", "and_then", "or_else"]
+      },
+      "panic_handling": {
+        "panic_macro": "panic!(message)",
+        "unrecoverable_errors": true,
+        "stack_unwinding": "default behavior",
+        "abort_on_panic": "alternative mode"
+      },
+      "error_propagation": {
+        "question_mark_operator": "automatic error propagation",
+        "try_blocks": "experimental feature",
+        "custom_error_types": "implement std::error::Error"
+      }
+    },
+    "concurrency": {
+      "threads": {
+        "std_thread": {
+          "spawn": "thread::spawn(closure)",
+          "join": "handle.join()",
+          "thread_local": "thread-local storage"
+        },
+        "thread_safety": {
+          "Send": "can be sent between threads",
+          "Sync": "can be shared between threads"
+        }
+      },
+      "message_passing": {
+        "channels": {
+          "mpsc": "multiple producer, single consumer",
+          "bounded": "limited capacity",
+          "unbounded": "unlimited capacity",
+          "oneshot": "single message"
+        }
+      },
+      "shared_state": {
+        "atomic_types": ["AtomicBool", "AtomicI32", "AtomicUsize", "AtomicPtr"],
+        "memory_ordering": ["Relaxed", "Acquire", "Release", "AcqRel", "SeqCst"],
+        "locks": {
+          "Mutex": "mutual exclusion",
+          "RwLock": "reader-writer lock",
+          "Condvar": "condition variable"
+        }
+      },
+      "async_programming": {
+        "futures": {
+          "Future_trait": "async computation",
+          "async_await": "syntax sugar",
+          "executors": ["tokio", "async-std", "smol"]
+        },
+        "async_functions": {
+          "syntax": "async fn",
+          "return_type": "impl Future<Output = T>"
+        },
+        "streams": {
+          "Stream_trait": "async iteration",
+          "async_iteration": "for await"
+        }
+      }
+    },
+    "testing": {
+      "unit_tests": {
+        "test_attribute": "#[test]",
+        "assertion_macros": ["assert!", "assert_eq!", "assert_ne!"],
+        "test_organization": "tests module"
+      },
+      "integration_tests": {
+        "tests_directory": "tests/ folder",
+        "separate_crates": "each file is separate crate"
+      },
+      "documentation_tests": {
+        "doc_comments": "/// examples in docs",
+        "automatic_testing": "cargo test runs doc tests"
+      },
+      "benchmarking": {
+        "criterion": "statistical benchmarking",
+        "bench_attribute": "#[bench] (unstable)"
+      },
+      "property_testing": {
+        "quickcheck": "property-based testing",
+        "proptest": "hypothesis-like testing"
+      }
+    },
+    "package_management": {
+      "cargo": {
+        "description": "Rust package manager and build system",
+        "commands": {
+          "new": "create new project",
+          "build": "compile project",
+          "run": "build and run",
+          "test": "run tests",
+          "check": "check without building",
+          "clean": "clean build artifacts",
+          "update": "update dependencies",
+          "publish": "publish to crates.io"
+        },
+        "configuration": {
+          "Cargo_toml": "project manifest",
+          "sections": {
+            "package": "project metadata",
+            "dependencies": "runtime dependencies",
+            "dev_dependencies": "development dependencies",
+            "build_dependencies": "build script dependencies"
+          }
+        }
+      },
+      "crates_io": {
+        "description": "Package registry",
+        "semver": "semantic versioning",
+        "features": "conditional compilation"
+      },
+      "workspaces": {
+        "description": "Multi-package projects",
+        "virtual_manifests": "workspace-only Cargo.toml",
+        "shared_dependencies": "dependency deduplication"
+      }
+    },
+    "standard_library": {
+      "core_modules": {
+        "std::collections": "data structures",
+        "std::fs": "filesystem operations",
+        "std::io": "input/output",
+        "std::net": "networking",
+        "std::path": "filesystem paths",
+        "std::process": "process management",
+        "std::sync": "synchronization primitives",
+        "std::thread": "threading",
+        "std::time": "time utilities"
+      },
+      "prelude": {
+        "description": "Automatically imported items",
+        "items": [
+          "std::marker::{Copy, Send, Sized, Sync, Unpin}",
+          "std::ops::{Drop, Fn, FnMut, FnOnce}",
+          "std::mem::drop",
+          "std::boxed::Box",
+          "std::borrow::ToOwned",
+          "std::clone::Clone",
+          "std::cmp::{PartialEq, PartialOrd, Eq, Ord}",
+          "std::convert::{AsRef, AsMut, Into, From}",
+          "std::default::Default",
+          "std::iter::{Iterator, Extend, IntoIterator}",
+          "std::option::Option::{self, Some, None}",
+          "std::result::Result::{self, Ok, Err}",
+          "std::string::{String, ToString}",
+          "std::vec::Vec"
+        ]
+      }
+    },
+    "ecosystem": {
+      "web_frameworks": {
+        "actix_web": {
+          "type": "full_featured",
+          "performance": "high",
+          "features": ["actors", "middleware", "websockets"]
+        },
+        "axum": {
+          "type": "modular",
+          "ergonomics": "high",
+          "ecosystem": "tokio"
+        },
+        "warp": {
+          "type": "filter_based",
+          "composability": "high"
+        },
+        "rocket": {
+          "type": "full_featured",
+          "code_generation": "proc_macros"
+        }
+      },
+      "async_runtimes": {
+        "tokio": {
+          "description": "Most popular async runtime",
+          "features": ["networking", "timers", "filesystem", "process"]
+        },
+        "async_std": {
+          "description": "Drop-in replacement for std",
+          "philosophy": "std-like_api"
+        },
+        "smol": {
+          "description": "Lightweight runtime",
+          "size": "minimal"
+        }
+      },
+      "serialization": {
+        "serde": {
+          "description": "Serialization framework",
+          "formats": ["json", "yaml", "toml", "bincode", "messagepack"],
+          "derive_macros": ["Serialize", "Deserialize"]
+        }
+      },
+      "cli_tools": {
+        "clap": "command line argument parsing",
+        "structopt": "derive-based CLI (deprecated)",
+        "anyhow": "error handling",
+        "thiserror": "custom error types"
+      },
+      "database": {
+        "sqlx": {
+          "description": "Async SQL toolkit",
+          "compile_time_checked": true,
+          "databases": ["PostgreSQL", "MySQL", "SQLite"]
+        },
+        "diesel": {
+          "description": "ORM and query builder",
+          "type_safe": true,
+          "sync": true
+        },
+        "sea_orm": {
+          "description": "Async ORM",
+          "relations": "built_in"
+        }
+      },
+      "graphics_and_games": {
+        "bevy": "data-driven game engine",
+        "ggez": "lightweight game framework",
+        "wgpu": "WebGPU implementation",
+        "winit": "window creation",
+        "image": "image processing"
+      },
+      "system_programming": {
+        "libc": "C library bindings",
+        "nix": "Unix system calls",
+        "windows": "Windows API bindings",
+        "mio": "low-level I/O",
+        "crossbeam": "lock-free concurrency"
+      }
+    },
+    "compilation_and_tooling": {
+      "rustc": {
+        "description": "Rust compiler",
+        "targets": "cross-compilation support",
+        "optimization_levels": ["0", "1", "2", "3", "s", "z"],
+        "debug_info": "debugging symbols"
+      },
+      "rustup": {
+        "description": "Toolchain installer",
+        "channels": ["stable", "beta", "nightly"],
+        "components": ["rustc", "cargo", "rustdoc", "clippy", "rustfmt"]
+      },
+      "clippy": {
+        "description": "Linting tool",
+        "lint_categories": ["correctness", "performance", "style", "complexity", "pedantic"]
+      },
+      "rustfmt": {
+        "description": "Code formatter",
+        "configuration": "rustfmt.toml"
+      },
+      "rustdoc": {
+        "description": "Documentation generator",
+        "doc_comments": "/// and //!",
+        "features": ["examples", "tests", "search"]
+      },
+      "cargo_extensions": {
+        "cargo_watch": "automatic rebuilding",
+        "cargo_edit": "dependency management",
+        "cargo_audit": "security auditing",
+        "cargo_deny": "license and security policy",
+        "cargo_tarpaulin": "code coverage"
+      }
+    },
+    "advanced_features": {
+      "macros": {
+        "declarative_macros": {
+          "syntax": "macro_rules!",
+          "pattern_matching": "token trees",
+          "hygiene": "automatic scoping"
+        },
+        "procedural_macros": {
+          "types": ["derive", "attribute", "function_like"],
+          "token_streams": "input and output",
+          "syn_and_quote": "parsing and generation"
+        }
+      },
+      "unsafe_rust": {
+        "raw_pointers": "*const T and *mut T",
+        "unsafe_functions": "unsafe fn",
+        "unsafe_traits": "unsafe trait",
+        "ffi": "foreign function interface",
+        "inline_assembly": "asm! macro"
+      },
+      "const_evaluation": {
+        "const_fn": "compile-time functions",
+        "const_generics": "type-level integers",
+        "const_assertions": "compile-time checks"
+      },
+      "zero_cost_abstractions": {
+        "description": "Abstractions with no runtime cost",
+        "examples": ["iterators", "closures", "enums", "generics"]
+      }
+    },
+    "performance": {
+      "optimization": {
+        "compiler_optimizations": "LLVM backend",
+        "profile_guided_optimization": "PGO support",
+        "link_time_optimization": "LTO"
+      },
+      "profiling": {
+        "perf": "Linux profiler integration",
+        "valgrind": "memory debugging",
+        "cargo_flamegraph": "flame graph generation"
+      },
+      "memory_efficiency": {
+        "zero_copy": "avoid unnecessary allocations",
+        "small_string_optimization": "inline small data",
+        "enum_layout_optimization": "compact representations"
+      }
+    },
+    "interoperability": {
+      "ffi": {
+        "c_interop": "native C integration",
+        "bindgen": "automatic binding generation",
+        "cbindgen": "C header generation"
+      },
+      "wasm": {
+        "wasm_pack": "WebAssembly toolchain",
+        "wasm_bindgen": "JavaScript bindings",
+        "target": "wasm32-unknown-unknown"
+      },
+      "python": {
+        "pyo3": "Python bindings",
+        "maturin": "Python package builder"
+      }
+    },
+    "deployment": {
+      "static_linking": "self-contained binaries",
+      "cross_compilation": "build for different targets",
+      "containerization": {
+        "docker": "minimal base images",
+        "multi_stage_builds": "small final images"
+      },
+      "cloud_platforms": {
+        "aws_lambda": "serverless functions",
+        "cloudflare_workers": "edge computing"
+      }
+    },
+    "best_practices": {
+      "api_design": {
+        "principles": [
+          "prefer_borrowing_over_owning",
+          "use_type_system_for_correctness",
+          "make_invalid_states_unrepresentable",
+          "provide_builder_patterns_for_complex_construction"
+        ]
+      },
+      "error_handling": {
+        "guidelines": [
+          "use_Result_for_recoverable_errors",
+          "use_panic_for_programming_errors",
+          "provide_context_with_errors",
+          "implement_std_error_Error"
+        ]
+      },
+      "performance": {
+        "guidelines": [
+          "measure_before_optimizing",
+          "prefer_iterators_over_loops",
+          "avoid_unnecessary_allocations",
+          "use_appropriate_data_structures"
+        ]
+      },
+      "safety": {
+        "guidelines": [
+          "minimize_unsafe_code",
+          "document_safety_invariants",
+          "provide_safe_abstractions",
+          "use_tools_like_miri_for_testing"
+        ]
+      }
+    }
+  }
+}
