@@ -1,0 +1,280 @@
+{
+  "knowledge_graph": [
+    {
+      "section": "4.3",
+      "title": "Hello World",
+      "concepts": ["function", "main", "println!"],
+      "code": "fn main() {\n    println!(\"Hello, world!\");\n}"
+    },
+    {
+      "section": "5.2",
+      "title": "Variables",
+      "concepts": ["variable", "immutable", "mutable", "type_annotation", "inference"],
+      "code": "let x: i32 = 10;\nlet mut y = 20;"
+    },
+    {
+      "section": "5.5",
+      "title": "Type Inference",
+      "concepts": ["type_inference", "f64", "i32"],
+      "code": "let z = 3.14;           // inferred f64\nlet n = 42;             // inferred i32"
+    },
+    {
+      "section": "5.6.1",
+      "title": "Fibonacci",
+      "concepts": ["function", "recursion", "u32", "control_flow"],
+      "code": "fn fib(n: u32) -> u32 {\n    if n < 2 {\n        n\n    } else {\n        fib(n - 1) + fib(n - 2)\n    }\n}"
+    },
+    {
+      "section": "6.2",
+      "title": "if Expression",
+      "concepts": ["if_expression", "expression_vs_statement", "string"],
+      "code": "let size = if x < 20 { \"small\" } else { \"large\" };"
+    },
+    {
+      "section": "6.3",
+      "title": "match",
+      "concepts": ["match", "pattern_matching", "wildcard"],
+      "code": "match val {\n    1 => println!(\"one\"),\n    _ => println!(\"other\"),\n}"
+    },
+    {
+      "section": "6.4.1",
+      "title": "for loop",
+      "concepts": ["for_loop", "array_iteration", "dbg!"],
+      "code": "for elem in [2, 3, 5] {\n    dbg!(elem);\n}"
+    },
+    {
+      "section": "6.5",
+      "title": "loop with break",
+      "concepts": ["loop", "break_with_value", "mutable_variable"],
+      "code": "let mut i = 0;\nlet result = loop {\n    i += 1;\n    if i > 5 { break i; }\n};"
+    },
+    {
+      "section": "6.8.1",
+      "title": "Collatz length",
+      "concepts": ["while_loop", "arithmetic", "function", "i32", "u32"],
+      "code": "fn collatz_length(mut n: i32) -> u32 {\n    let mut len = 1;\n    while n > 1 {\n        n = if n % 2 == 0 { n / 2 } else { 3 * n + 1 };\n        len += 1;\n    }\n    len\n}"
+    },
+    {
+      "section": "8.1",
+      "title": "Arrays",
+      "concepts": ["array", "mutability", "indexing", "i8"],
+      "code": "let mut a: [i8; 5] = [5, 4, 3, 2, 1];\na[2] = 0;"
+    },
+    {
+      "section": "8.2",
+      "title": "Tuples",
+      "concepts": ["tuple", "field_access", "type_annotation"],
+      "code": "let t: (i8, bool) = (7, true);\ndbg!(t.0);"
+    },
+    {
+      "section": "8.5.1",
+      "title": "Transpose 3×3",
+      "concepts": ["multidimensional_array", "nested_loop", "function", "array_copy"],
+      "code": "fn transpose(matrix: [[i32; 3]; 3]) -> [[i32; 3]; 3] {\n    let mut result = [[0; 3]; 3];\n    for i in 0..3 {\n        for j in 0..3 {\n            result[j][i] = matrix[i][j];\n        }\n    }\n    result\n}"
+    },
+    {
+      "section": "9.1",
+      "title": "Shared Reference",
+      "concepts": ["reference", "borrowing", "immutable_borrow", "i32"],
+      "code": "let r: &i32 = &x;"
+    },
+    {
+      "section": "9.2",
+      "title": "Mutable Reference",
+      "concepts": ["mutable_reference", "dereference", "borrowing"],
+      "code": "let mr: &mut i32 = &mut x;\n*mr += 1;"
+    },
+    {
+      "section": "9.4",
+      "title": "String vs &str",
+      "concepts": ["String", "&str", "string_mutation", "push_str", "from"],
+      "code": "let s1: &str = \"world\";\nlet mut s2: String = String::from(\"hello \");\ns2.push_str(s1);"
+    },
+    {
+      "section": "9.6.1",
+      "title": "Geometry helpers",
+      "concepts": ["slice", "mutability", "iterator", "sqrt", "normalize", "magnitude"],
+      "code": "fn magnitude(vector: &[f64; 3]) -> f64 {\n    vector.iter().map(|&c| c * c).sum::<f64>().sqrt()\n}\n\nfn normalize(vector: &mut [f64; 3]) {\n    let mag = magnitude(vector);\n    for item in vector {\n        *item /= mag;\n    }\n}"
+    },
+    {
+      "section": "10.1",
+      "title": "Struct",
+      "concepts": ["struct", "field", "instantiation", "String", "u8"],
+      "code": "struct Person {\n    name: String,\n    age: u8,\n}\nlet alice = Person {\n    name: String::from(\"Alice\"),\n    age: 30,\n};"
+    },
+    {
+      "section": "10.2",
+      "title": "Tuple Struct",
+      "concepts": ["tuple_struct", "newtype_pattern", "f64"],
+      "code": "struct Meters(f64);\nlet height = Meters(1.73);"
+    },
+    {
+      "section": "10.3",
+      "title": "Enum",
+      "concepts": ["enum", "variants"],
+      "code": "enum Direction {\n    Left,\n    Right,\n}"
+    },
+    {
+      "section": "12.1",
+      "title": "Destructuring Tuple",
+      "concepts": ["destructuring", "tuple", "ignore_pattern"],
+      "code": "let (a, _, c) = tuple;"
+    },
+    {
+      "section": "12.2",
+      "title": "match with guards",
+      "concepts": ["match", "range_pattern", "guard", "method_call"],
+      "code": "match c {\n    '0'..='9' => println!(\"digit\"),\n    ch if ch.is_lowercase() => println!(\"lower\"),\n    _ => println!(\"other\"),\n}"
+    },
+    {
+      "section": "12.5.1",
+      "title": "if let",
+      "concepts": ["if_let", "Option", "pattern_matching"],
+      "code": "if let Some(v) = maybe {\n    use(v);\n}"
+    },
+    {
+      "section": "12.5.2",
+      "title": "while let",
+      "concepts": ["while_let", "iterator", "Option"],
+      "code": "while let Some(c) = iter.next() {\n    println!(\"{c}\");\n}"
+    },
+    {
+      "section": "13.1",
+      "title": "Method Example",
+      "concepts": ["impl", "method", "self_mut", "vector_push"],
+      "code": "impl CarRace {\n    fn add_lap(&mut self, lap: i32) {\n        self.laps.push(lap);\n    }\n}"
+    },
+    {
+      "section": "13.2",
+      "title": "Trait Definition",
+      "concepts": ["trait", "method_signature"],
+      "code": "trait Pet {\n    fn talk(&self) -> String;\n}"
+    },
+    {
+      "section": "13.4.1",
+      "title": "VerbosityFilter Logger impl",
+      "concepts": ["trait_implementation", "conditional_logic", "composition"],
+      "code": "impl Logger for VerbosityFilter {\n    fn log(&self, verbosity: u8, message: &str) {\n        if verbosity <= self.max_verbosity {\n            self.inner.log(verbosity, message);\n        }\n    }\n}"
+    },
+    {
+      "section": "14.1",
+      "title": "Generic pick",
+      "concepts": ["generics", "function", "type_parameter"],
+      "code": "fn pick<T>(cond: bool, left: T, right: T) -> T {\n    if cond { left } else { right }\n}"
+    },
+    {
+      "section": "14.2",
+      "title": "Trait bound",
+      "concepts": ["trait_bound", "Clone", "generic_function"],
+      "code": "fn duplicate<T: Clone>(a: T) -> (T, T) {\n    (a.clone(), a.clone())\n}"
+    },
+    {
+      "section": "14.7.1",
+      "title": "Generic min",
+      "concepts": ["Ord", "generic_function", "comparison"],
+      "code": "fn min<T: Ord>(a: T, b: T) -> T {\n    if a <= b { a } else { b }\n}"
+    },
+    {
+      "section": "16.3",
+      "title": "Option usage",
+      "concepts": ["Option", "string_search", "find"],
+      "code": "let pos: Option<usize> = text.find('z');"
+    },
+    {
+      "section": "16.5",
+      "title": "String builder",
+      "concepts": ["String", "capacity", "push_str", "push"],
+      "code": "let mut s = String::with_capacity(100);\ns.push_str(\"hello\");\ns.push('!');"
+    },
+    {
+      "section": "16.6",
+      "title": "Vec retain / dedup",
+      "concepts": ["Vec", "retain", "dedup", "closure", "predicate"],
+      "code": "let mut v = vec![0, 0, 1, 2, 3, 4];\nv.retain(|&x| x % 2 == 0);\nv.dedup();"
+    },
+    {
+      "section": "17.1",
+      "title": "Simple closure",
+      "concepts": ["closure", "inline_function"],
+      "code": "let double = |x| x * 2;"
+    },
+    {
+      "section": "17.2",
+      "title": "Capturing closure",
+      "concepts": ["closure", "capture_by_value", "environment"],
+      "code": "let max = 5;\nlet clamp = |v| if v > max { max } else { v };"
+    },
+    {
+      "section": "17.4.1",
+      "title": "Logger filter closure",
+      "concepts": ["closure", "trait_object", "contains", "filter"],
+      "code": "let logger = Filter::new(stderr, |_, msg| msg.contains(\"yikes\"));"
+    },
+    {
+      "section": "18.2",
+      "title": "Add trait for Point",
+      "concepts": ["operator_overloading", "Add", "impl", "associated_type"],
+      "code": "impl std::ops::Add for Point {\n    type Output = Self;\n    fn add(self, other: Self) -> Self {\n        Self {\n            x: self.x + other.x,\n            y: self.y + other.y,\n        }\n    }\n}"
+    },
+    {
+      "section": "18.3",
+      "title": "From / Into",
+      "concepts": ["From", "Into", "conversion", "array_to_Ipv4Addr"],
+      "code": "let s: String = \"hello\".into();\nlet addr: Ipv4Addr = [127, 0, 0, 1].into();"
+    },
+    {
+      "section": "18.7.1",
+      "title": "ROT13 Read adapter",
+      "concepts": ["trait_implementation", "Read", "buffer", "ASCII_manipulation", "encryption"],
+      "code": "impl<R: Read> Read for RotDecoder<R> {\n    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {\n        let size = self.input.read(buf)?;\n        for b in &mut buf[..size] {\n            if b.is_ascii_alphabetic() {\n                let base = if b.is_ascii_uppercase() { b'A' } else { b'a' };\n                *b = (*b - base + self.rot) % 26 + base;\n            }\n        }\n        Ok(size)\n    }\n}"
+    },
+    {
+      "section": "20.4",
+      "title": "Move semantics demo",
+      "concepts": ["move_semantics", "ownership", "String"],
+      "code": "let s1 = String::from(\"hello\");\nlet s2 = s1;   // s1 moved; no longer usable"
+    },
+    {
+      "section": "20.5",
+      "title": "Clone",
+      "concepts": ["clone", "deep_copy", "trait"],
+      "code": "say_hello(name.clone());"
+    },
+    {
+      "section": "20.6",
+      "title": "Copy type",
+      "concepts": ["Copy", "Clone", "derive", "primitive_like"],
+      "code": "#[derive(Copy, Clone)]\nstruct Point(i32, i32);"
+    },
+    {
+      "section": "20.7",
+      "title": "Drop",
+      "concepts": ["Drop", "destructor", "resource_cleanup"],
+      "code": "struct Droppable(&'static str);\nimpl Drop for Droppable {\n    fn drop(&mut self) {\n        println!(\"Dropping {}\", self.0);\n    }\n}"
+    },
+    {
+      "section": "20.8.1",
+      "title": "Package Builder",
+      "concepts": ["builder_pattern", "method_chaining", "vec", "String"],
+      "code": "PackageBuilder::new(\"serde\")\n    .version(\"1.0\")\n    .authors(vec![\"somebody\".into()])\n    .build()"
+    },
+    {
+      "section": "21.1",
+      "title": "Box",
+      "concepts": ["Box", "heap_allocation"],
+      "code": "let five = Box::new(5);"
+    },
+    {
+      "section": "21.2",
+      "title": "Rc",
+      "concepts": ["Rc", "reference_counting", "shared_ownership"],
+      "code": "use std::rc::Rc;\nlet a = Rc::new(10);\nlet b = Rc::clone(&a);"
+    },
+    {
+      "section": "21.4.1",
+      "title": "Binary Tree insert & has",
+      "concepts": ["binary_tree", "Box", "recursive_data_structure", "Ord", "insert", "search"],
+      "code": "impl<T: Ord> Subtree<T> {\n    fn insert(&mut self, value: T) {\n        match &mut self.0 {\n            None => self.0 = Some(Box::new(Node::new(value))),\n            Some(node) => match value.cmp(&node.value) {\n                Ordering::Less => node.left.insert(value),\n                Ordering::Greater => node.right.insert(value),\n                Ordering::Equal => {}\n            },\n        }\n    }\n\n    fn has(&self, value: &T) -> bool {\n        match &self.0 {\n            None => false,\n            Some(node) => match value.cmp(&node.value) {\n                Ordering::Less => node.left.has(value),\n                Ordering::Greater => node.right.has(value),\n                Ordering::Equal => true,\n            },\n        }\n    }\n}"
+    }
+  ]
+}
