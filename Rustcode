@@ -1,0 +1,9 @@
+| Concept                   | Key Ideas                                                        | Typical Syntax                                         |
+| ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| **Variables & Binding**   | immutable by default, explicit mut, type inference               | `let x = 5; let mut y = 10;`                           |
+| **Primitive Types**       | `i8 … i128`, `u8 … u128`, `f32/f64`, `bool`, `char`              | `let b: u8 = 255;`                                     |
+| **Compound Types**        | arrays, slices, tuples, tuple structs                            | `[T; N]`, `&[T]`, `(i32, bool)`, `struct Meters(f64);` |
+| **Control Flow**          | `if`/`else` *as expressions*, `match`, `loop`, `while`, `for`    | `let x = if c { 1 } else { 2 };`                       |
+| **Functions & Closures**  | generics, lifetimes, trait bounds, `move`, `Fn`/`FnMut`/`FnOnce` | `fn foo<T: Clone>(t: T) -> T { t.clone() }`            |
+| **Ownership & Borrowing** | single owner, move semantics, `&T`, `&mut T`, lifetime `'a`      | `fn longest<'a>(x: &'a str, y: &'a str) -> &'a str`    |
+| **Error Handling**        | `panic!`, `Result<T, E>`, `Option<T>`, `?` operator              | `let v = f()?;`                                        |
